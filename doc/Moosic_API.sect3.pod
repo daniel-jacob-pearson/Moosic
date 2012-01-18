@@ -1,0 +1,688 @@
+
+=over
+
+=item array B<api_version> ()
+
+   Returns the version number for the API that the server implements.
+    
+       Arguments: None.
+       Return value: The version number, which is a 2-element array of
+           integers.  The first element is the major version, and the second
+           element is the minor version.
+        
+
+=item boolean B<append> (array)
+
+   Adds items to the end of the queue.
+    
+       Argument: An array of (base64-encoded) strings, representing the items to be
+           added.
+         * When adding local filenames to the queue, only absolute pathnames should
+           be used.  Using relative pathnames would be foolish because the server
+           has no idea what the client's current working directory is.
+       Return value: Nothing meaningful.
+        
+
+=item boolean B<clear> ()
+
+   Removes all items from the queue.
+    
+       Arguments: None.
+       Return value: Nothing meaningful.
+        
+
+=item boolean B<crop> (array)
+
+   Remove all queued items that do not fall within the given range.
+    
+       Arguments: An array of integers that represents a range.
+         * If the range contains a single integer, it will represent all members
+           of the queue whose index is greater than or equal to the value of the
+           integer.
+         * If the range contains two integers, it will represent all members of
+           the queue whose index is greater than or equal to the value of the
+           first integer and less than the value of the second integer.
+         * If the range contains more than two integers, an error will occur.
+       Return value: Nothing meaningful.
+        
+
+=item boolean B<crop_list> (array)
+
+   Removes all items except for those referenced by a list of positions.
+       
+       Arguments: An array of integers that represents a list of the positions of
+           the items to be kept. 
+       Return value: Nothing meaningful.
+        
+
+=item base64 B<current> ()
+
+   Returns the name of the currently playing song.
+    
+       Arguments: None.
+       Return value: The name of the currently playing song.
+        
+
+=item double B<current_time> ()
+
+   Returns the amount of time that the current song has been playing.
+    
+       Arguments: None.
+       Return value: The number of seconds that the current song has been playing.
+        
+
+=item boolean B<cut> (array)
+
+   Remove all queued items that fall within the given range.
+    
+       Arguments: An array of integers that represents a range.
+         * If the range contains a single integer, it will represent all members
+           of the queue whose index is greater than or equal to the value of the
+           integer.
+         * If the range contains two integers, it will represent all members of
+           the queue whose index is greater than or equal to the value of the
+           first integer and less than the value of the second integer.
+         * If the range contains more than two integers, an error will occur.
+       Return value: Nothing meaningful.
+        
+
+=item boolean B<cut_list> (array)
+
+   Removes the items referenced by a list of positions within the queue.
+       
+       Arguments: An array of integers that represents a list of the positions of
+           the items to be removed. 
+       Return value: Nothing meaningful.
+        
+
+=item boolean B<die> ()
+
+   Tells the server to terminate itself.
+    
+       Arguments: None.
+       Return value: Nothing meaningful.
+        
+
+=item boolean B<filter> (base64)
+
+=item boolean B<filter> (base64, array)
+
+   Removes all items that don't match the given regular expression.
+    
+       Arguments: A regular expression that specifies which items to keep.
+         * Optionally, an array of integers may be given as a second argument.
+           This argument represents a range to which the filtering will be
+           limited.
+         * If the range contains a single integer, it will represent all members
+           of the queue whose index is greater than or equal to the value of the
+           integer.
+         * If the range contains two integers, it will represent all members of
+           the queue whose index is greater than or equal to the value of the
+           first integer and less than the value of the second integer.
+         * If the range contains more than two integers, an error will occur.
+       Return value: Nothing meaningful.
+        
+
+=item int B<get_history_limit> ()
+
+   Gets the limit on the size of the history list stored in memory.
+    
+       Arguments: None.
+       Return value: The maximum number of history entries that the server will
+           remember.
+        
+
+=item array B<getconfig> ()
+
+   Returns a list of the server's filetype-player associations.
+       
+       Arguments: None.
+       Return value: An array of pairs. The first element of each pair is a
+           (base64-encoded) string that represents a regular expression pattern,
+           and the second element is a (base64-encoded) string that represents the
+           system command that should be used to handle songs that match the
+           corresponding pattern.
+        
+
+=item boolean B<halt_queue> ()
+
+   Stops any new songs from being played. Use run_queue() to reverse this
+       state.
+    
+       Arguments: None.
+       Return value: Nothing meaningful.
+        
+
+=item boolean B<haltqueue> ()
+
+   Stops any new songs from being played. Use run_queue() to reverse this
+       state.
+    
+       Arguments: None.
+       Return value: Nothing meaningful.
+        
+
+=item array B<history> ()
+
+=item array B<history> (int)
+
+   Returns a list of the items that were recently played.
+    
+       Arguments: If a positive integer argument is given, then no more than that
+           number of entries will be returned.  If a number is not specified, or if
+           zero is given, then the entire history is returned.  The result is
+           undefined if a negative integer argument is given (but does not raise an
+           exception).
+       Return value: An array of triples, each representing a song that was played
+           along with the times that it started and finished playing.
+         * The first member of the pair is a (base64-encoded) string which
+           represents the song that was previously played.
+         * The second member of the pair is a floating point number which
+           represents the time that the song started playing in seconds since the
+           epoch.
+         * The third member of the pair is a floating point number which
+           represents the time that the song finished playing in seconds since the
+           epoch.
+        
+
+=item struct B<indexed_list> ()
+
+=item struct B<indexed_list> (array)
+
+   Lists the song queue's contents. If a range is specified, only the
+       items that fall within that range are listed.
+    
+       This differs from list() only in its return value, and is useful when you
+       want to know the starting position of your selected range within the song
+       queue (which can be different than the starting index of the specified range
+       if, for example, the starting index is a negative integer).
+    
+       Arguments: Either none, or an array of integers that represents a range.
+         * If no range is given, the whole list is returned.
+         * If the range contains a single integer, it will represent all members
+           of the queue whose index is greater than or equal to the value of the
+           integer.
+         * If the range contains two integers, it will represent all members of
+           the queue whose index is greater than or equal to the value of the
+           first integer and less than the value of the second integer.
+         * If the range contains more than two integers, an error will occur.
+       Return value: A struct with two elements. This first is "list", an array of
+           (base64-encoded) strings, representing the selected range from the song
+           queue's contents. The second is "start", an integer index value that
+           represents the position of the first item of the returned list in the
+           song queue.
+        
+
+=item boolean B<insert> (array, int)
+
+   Inserts items at a given position in the queue.
+    
+       Arguments: The first argument is an array of (base64-encoded) strings,
+           representing the items to be added.
+         * The second argument specifies the position in the queue where the items
+           will be inserted.
+         * When adding local filenames to the queue, only absolute pathnames should
+           be used.  Using relative pathnames would be foolish because the server
+           has no idea what the client's current working directory is.
+       Return value: Nothing meaningful.
+        
+
+=item boolean B<is_looping> ()
+
+   Tells you whether loop mode is on or not.
+    
+       If loop mode is on, songs are returned to the end of the song queue after
+       they finish playing.  If loop mode is off, songs that have finished playing
+       are not returned to the queue.
+    
+       Arguments: None.
+       Return value: True if loop mode is set, False if it is not.
+        
+
+=item boolean B<is_paused> ()
+
+   Tells you whether the current song is paused or not.
+    
+       Arguments: None.
+       Return value: True if the current song is paused, otherwise False.
+        
+
+=item boolean B<is_queue_running> ()
+
+   Tells you whether the queue consumption (advancement) is activated.
+    
+       Arguments: None.
+       Return value: True if new songs are going to be played from the queue after
+           the current song is finished, otherwise False.
+        
+
+=item double B<last_queue_update> ()
+
+   Returns the time at which the song queue was last modified.
+    
+       This method is intended for use by GUI clients that don't want to waste time
+       downloading the entire contents of the song queue if it hasn't changed.
+       
+       Arguments: None.
+       Return value: A floating-point number that represents time as the number of
+           seconds since the epoch.
+        
+
+=item int B<length> ()
+
+   Returns the number of items in the song queue.
+    
+       Arguments: None.
+       Return value: The number of items in the song queue.
+        
+
+=item array B<list> ()
+
+=item array B<list> (array)
+
+   Lists the song queue's contents. If a range is specified, only the
+       items that fall within that range are listed.
+    
+       Arguments: Either none, or an array of integers that represents a range.
+         * If no range is given, the whole list is returned.
+         * If the range contains a single integer, it will represent all members
+           of the queue whose index is greater than or equal to the value of the
+           integer.
+         * If the range contains two integers, it will represent all members of
+           the queue whose index is greater than or equal to the value of the
+           first integer and less than the value of the second integer.
+         * If the range contains more than two integers, an error will occur.
+       Return value: An array of (base64-encoded) strings, representing the
+           selected range from the song queue's contents.
+        
+
+=item boolean B<move> (array, int)
+
+   Moves a range of items to a new position within the queue.
+    
+       Arguments: The first argument is an array of integers that represents a
+           range of items to be moved. 
+         * If the range contains a single integer, it will represent all members
+           of the queue whose index is greater than or equal to the value of the
+           integer.
+         * If the range contains two integers, it will represent all members of
+           the queue whose index is greater than or equal to the value of the
+           first integer and less than the value of the second integer.
+         * If the range contains more than two integers, an error will occur.
+         * The second argument, "destination", specifies the position in the queue
+           where the items will be moved.
+       Return value: Nothing meaningful.
+        
+
+=item boolean B<move_list> (array, int)
+
+   Moves the items referenced by a list of positions to a new position.
+       
+       Arguments: The first argument is an array of integers that represents a
+           list of the positions of the items to be moved. 
+         * The second argument, "destination", specifies the position in the queue
+           where the items will be moved.
+       Return value: Nothing meaningful.
+        
+
+=item boolean B<next> ()
+
+=item boolean B<next> (int)
+
+   Stops the current song (if any), and jumps ahead to a song that is
+       currently in the queue. The skipped songs are recorded in the history as if
+       they had been played. When called without arguments, this behaves very
+       much like the skip() method, except that it will have an effect even if
+       nothing is currently playing.
+    
+       Arguments: A single integer that tells how far forward into the song queue
+           to advance. A value of 1 will cause the first song in the queue to play,
+           2 will cause the second song in the queue to play, and so on. If no
+           argument is given, a value of 1 is assumed.
+       Return value: Nothing meaningful.
+        
+
+=item boolean B<no_op> ()
+
+   Does nothing, successfully.
+    
+       Arguments: None.
+       Return value: Nothing meaningful.
+        
+
+=item boolean B<pause> ()
+
+   Pauses the currently playing song.
+    
+       Arguments: None.
+       Return value: Nothing meaningful.
+        
+
+=item boolean B<prepend> (array)
+
+   Adds items to the beginning of the queue.
+    
+       Argument: An array of (base64-encoded) strings, representing the items to be
+           added.
+         * When adding local filenames to the queue, only absolute pathnames should
+           be used.  Using relative pathnames would be foolish because the server
+           has no idea what the client's current working directory is.
+       Return value: Nothing meaningful.
+        
+
+=item boolean B<previous> ()
+
+=item boolean B<previous> (int)
+
+   Stops the current song (if any), removes the most recently played song
+       from the history, and puts these songs at the head of the queue. When loop
+       mode is on, the songs at the tail of the song queue are used instead of the
+       most recently played songs in the history.
+    
+       Arguments: A single integer that tells how far back in the history list to
+           retreat. A value of 1 will cause the most recent song to play, 2 will
+           cause the second most recent song to play, and so on. If no argument is
+           given, a value of 1 is assumed.
+       Return value: Nothing meaningful.
+        
+
+=item boolean B<putback> ()
+
+   Places the currently playing song at the beginning of the queue.
+    
+       Arguments: None.
+       Return value: Nothing meaningful.
+        
+
+=item int B<queue_length> ()
+
+   Returns the number of items in the song queue.
+    
+       Arguments: None.
+       Return value: The number of items in the song queue.
+        
+
+=item boolean B<reconfigure> ()
+
+   Tells the server to reread its player configuration file.
+    
+       Arguments: None.
+       Return value: Nothing meaningful.
+        
+
+=item boolean B<remove> (base64)
+
+=item boolean B<remove> (base64, array)
+
+   Removes all items that match the given regular expression.
+    
+       Arguments: A regular expression that specifies which items to remove.
+         * Optionally, an array of integers may be given as a second argument.
+           This argument represents a range to which the removal will be limited.
+         * If the range contains a single integer, it will represent all members
+           of the queue whose index is greater than or equal to the value of the
+           integer.
+         * If the range contains two integers, it will represent all members of
+           the queue whose index is greater than or equal to the value of the
+           first integer and less than the value of the second integer.
+         * If the range contains more than two integers, an error will occur.
+       Return value: Nothing meaningful.
+        
+
+=item boolean B<replace> (array)
+
+   Replaces the contents of the queue with the given items.
+    
+       This is equivalent to calling clear() and prepend() in succession, except that this
+       operation is atomic.
+    
+       Argument: An array of (base64-encoded) strings, representing the items to be
+           added.
+         * When adding local filenames to the queue, only absolute pathnames
+           should be used.  Using relative pathnames would be foolish because
+           the server isn't aware of the client's current working directory.
+       Return value: Nothing meaningful.
+        
+
+=item boolean B<reverse> ()
+
+=item boolean B<reverse> (array)
+
+   Reverses the order of the items in the queue.
+    
+       Arguments: Either none, or an array of integers that represents a range.
+         * If no range is given, the whole list is affected.
+         * If the range contains a single integer, it will represent all members
+           of the queue whose index is greater than or equal to the value of the
+           integer.
+         * If the range contains two integers, it will represent all members of
+           the queue whose index is greater than or equal to the value of the
+           first integer and less than the value of the second integer.
+         * If the range contains more than two integers, an error will occur.
+       Return value: Nothing meaningful.
+        
+
+=item boolean B<run_queue> ()
+
+   Allows new songs to be played again after halt_queue() has been called.
+    
+       Arguments: None.
+       Return value: Nothing meaningful.
+        
+
+=item boolean B<runqueue> ()
+
+   Allows new songs to be played again after halt_queue() has been called.
+    
+       Arguments: None.
+       Return value: Nothing meaningful.
+        
+
+=item boolean B<set_history_limit> (int)
+
+   Sets the limit on the size of the history list stored in memory.
+    
+       This will irrevocably discard history entries if the new limit is lower than
+       the current size of the history list.
+    
+       Arguments: The new maximum number of history entries. If this value is
+           negative, the history limit will be set to zero.
+       Return value: Nothing meaningful.
+        
+
+=item boolean B<set_loop_mode> (boolean)
+
+   Turns loop mode on or off.
+    
+       If loop mode is on, songs are returned to the end of the song queue after
+       they finish playing.  If loop mode is off, songs that have finished playing
+       are not returned to the queue.
+    
+       Arguments: True if you want to turn loop mode on, False if you want to turn
+           it off.
+       Return value: Nothing meaningful.
+        
+
+=item base64 B<showconfig> ()
+
+   Returns a textual description of the server's player configuration.
+    
+       Arguments: None.
+       Return value: A (base64-encoded) string that shows which programs will be
+           used to play the various file-types recognized by the Moosic server.
+        
+
+=item boolean B<shuffle> ()
+
+=item boolean B<shuffle> (array)
+
+   Rearrange the contents of the queue into a random order.
+    
+       Arguments: Either none, or an array of integers that represents a range.
+         * If no range is given, the whole list is affected.
+         * If the range contains a single integer, it will represent all members
+           of the queue whose index is greater than or equal to the value of the
+           integer.
+         * If the range contains two integers, it will represent all members of
+           the queue whose index is greater than or equal to the value of the
+           first integer and less than the value of the second integer.
+         * If the range contains more than two integers, an error will occur.
+       Return value: Nothing meaningful.
+        
+
+=item boolean B<skip> ()
+
+   Skips the rest of the current song to play the next song in the queue.
+       This only has an effect if there actually is a current song.
+    
+       Arguments: None.
+       Return value: Nothing meaningful.
+        
+
+=item boolean B<sort> ()
+
+=item boolean B<sort> (array)
+
+   Arranges the contents of the queue into sorted order.
+    
+       Arguments: Either none, or an array of integers that represents a range.
+         * If no range is given, the whole list is affected.
+         * If the range contains a single integer, it will represent all members
+           of the queue whose index is greater than or equal to the value of the
+           integer.
+         * If the range contains two integers, it will represent all members of
+           the queue whose index is greater than or equal to the value of the
+           first integer and less than the value of the second integer.
+         * If the range contains more than two integers, an error will occur.
+       Return value: Nothing meaningful.
+        
+
+=item boolean B<stop> ()
+
+   Stops playing the current song and stops new songs from playing. The
+       current song is returned to the head of the song queue and is not recorded
+       in the history list. If loop mode is on, the current song won't be placed at
+       the end of the song queue when it is stopped.
+    
+       Arguments: None.
+       Return value: Nothing meaningful.
+        
+
+=item boolean B<sub> (base64, base64)
+
+=item boolean B<sub> (base64, base64, array)
+
+   Performs a regular expression substitution on the items in the queue.
+       
+       Arguments: The first is a (base64-encoded) regular expression that specifies
+           the text to be replaced.
+         * The second argument is the (base64-encoded) string that will be used to
+           replace the first occurrence of the regular expression within each queue
+           item. Any backslash escapes in this string will be processed, including
+           special character translation (e.g. "\n" to newline) and backreferences
+           to groups within the match.
+         * Optionally, an array of integers may be given as a third argument.
+           This argument represents a range to which the substitution will be
+           limited. This range is interpreted in the same way as the range argument
+           in other Moosic methods.
+         * If performing a replacement changes an item in the queue into the empty
+           string, then it is removed from the queue.
+       Return value: Nothing meaningful.
+        
+
+=item boolean B<sub_all> (base64, base64)
+
+=item boolean B<sub_all> (base64, base64, array)
+
+   Performs a global regular expression substitution on the items in the queue.
+       
+       Arguments: The first is a (base64-encoded) regular expression that specifies
+           the text to be replaced.
+         * The second argument is the (base64-encoded) string that will be used to
+           replace all occurrences of the regular expression within each queue
+           item. Any backslash escapes in this string will be processed, including
+           special character translation (e.g. "\n" to newline) and backreferences
+           to the substrings matched by individual groups in the pattern.
+         * Optionally, an array of integers may be given as a third argument.
+           This argument represents a range to which the substitution will be
+           limited. This range is interpreted in the same way as the range argument
+           in other Moosic methods.
+         * If performing a replacement changes an item in the queue into the empty
+           string, then it is removed from the queue.
+       Return value: Nothing meaningful.
+        
+
+=item boolean B<swap> (array, array)
+
+   Swaps the items contained in one range with the items contained in the
+       other range.
+       
+       Return value: Nothing meaningful.
+        
+
+=item array B<system.listMethods> ()
+
+   Return an array of all available XML-RPC methods on this server.
+            
+
+=item string B<system.methodHelp> (string)
+
+   Given the name of a method, return a help string.
+            
+
+=item array B<system.methodSignature> (string)
+
+   Given the name of a method, return an array of legal signatures. Each
+           signature is an array of strings. The first item of each signature is
+           the return type, and any others items are parameter types.
+            
+
+=item array B<system.multicall> (array)
+
+   Process an array of calls, and return an array of results. Calls
+           should be structs of the form {'methodName': string, 'params': array}.
+           Each result will either be a single-item array containg the result
+           value, or a struct of the form {'faultCode': int, 'faultString':
+           string}. This is useful when you need to make lots of small calls
+           without lots of round trips.
+            
+
+=item boolean B<toggle_loop_mode> ()
+
+   Turns loop mode on if it is off, and turns it off if it is on.
+    
+       If loop mode is on, songs are returned to the end of the song queue after
+       they finish playing.  If loop mode is off, songs that have finished playing
+       are not returned to the queue.
+    
+       Arguments: None.
+       Return value: Nothing meaningful.
+        
+
+=item boolean B<toggle_pause> ()
+
+   Pauses the current song if it is playing, and unpauses if it is paused.
+    
+       Arguments: None.
+       Return value: Nothing meaningful.
+        
+
+=item boolean B<unpause> ()
+
+   Unpauses the current song.
+    
+       Arguments: None.
+       Return value: Nothing meaningful.
+        
+
+=item string B<version> ()
+
+   Returns the Moosic server's version string.
+    
+       Arguments: None.
+       Return value: The version string for the Moosic server.
+        
+
+
+=back
+

@@ -1,0 +1,180 @@
+=head1 NAME
+
+moosicd - the server for the Moosic jukebox system.
+
+=head1 SYNOPSIS
+
+B<moosicd> B<--help>|B<-h>|B<--version>|B<-v>
+
+B<moosicd> [B<--history-size>|B<-s> I<size>] [B<--config>|B<-c> I<directory>] [B<--quiet>|B<-q>|B<--debug>|B<-d>] [B<-S>|B<--stdout>] [B<-t>|B<--tcp> I<port>] [B<-T>|B<--tcp-also> I<port>] [B<-l>|B<--local-only>]
+
+=head1 DESCRIPTION
+
+B<moosicd> is the server for the Moosic jukebox system. It sits around, waiting
+to respond to commands given by a Moosic client (such as L<moosic>(1)). It
+also maintains a queue of items to be played, and if this queue is not empty,
+it pops off the first item from the head of the queue and executes a
+user-configurable command on that item. When this command terminates,
+B<moosicd> goes on to the next item in its queue, assuming that the queue is
+not empty.
+
+B<moosicd> is not meant to be used as a system-wide daemon that serves all users
+on a system.  Rather, every user that wishes to use Moosic should start a
+separate instance of B<moosicd>, and one user cannot communicate with the Moosic
+server of another user without taking special measures (i.e. using the B<-c> or
+B<-t> options to B<moosic>).
+
+=head1 OPTIONS
+
+B<moosicd> is designed so that you normally don't need to use any of these
+options.
+
+=over
+
+=item B<-h>, B<--help>
+
+Prints help text and exits.
+
+=item B<-v>, B<--version>
+
+Prints version information and exits.
+
+=item B<-s> I<size>, B<--history-size> I<size>
+
+B<moosicd> remembers the file names of previous songs that it played. This
+option sets the maximum size of this history list. The default value is 50.
+
+=item B<-f>, B<--foreground>
+
+By default, B<moosicd> detaches itself from the current terminal and puts itself
+in the background (i.e. it becomes a daemon).  This option disables such
+behavior.
+
+=item B<-S>, B<--stdout>
+
+By default, B<moosicd> logs almost all of its printed output to a file. When
+this option is used, the output is instead printed to the standard output
+device. This also prevents the program from putting itself in the background and
+detaching from the current terminal.
+
+=item B<-q>, B<--quiet>
+
+This option suppresses almost all printed output from B<moosicd>. Note that, by
+default, B<moosicd> prints this output to a file, not the standard output
+device.
+
+=item B<-d>, B<--debug>
+
+This option causes B<moosicd> to print lots and lots of messages about what
+it's doing. These messages are usually quite superfluous and bothersome. Note
+that unless the B<-S> option is used these messages will appear in the log file
+instead of the standard output device.
+
+=item B<-c> I<directory>, B<--config> I<directory>
+
+Specifies the directory where moosicd should keep the various files that it
+uses. The default directory is F<~/.moosic/>. This option is useful only in
+extraordinary circumstances. If this option is used, any Moosic clients that
+wish to communicate with B<moosicd> must be told to use the specified directory
+instead of the default.
+
+=item B<-t> I<port>, B<--tcp> I<port>
+
+This option directs the server to listen to the given TCP port number for client
+requests instead of using the normal communication method.  Use of this option
+without the B<-l> option is I<highly discouraged> unless you know what you are
+doing because there is no guarantee that B<moosicd> is secure against malicious
+input from a remote location.  Note that an instance of B<moosicd> which is
+started with this option will not accept requests from a client that is using
+the normal communication method.
+
+=item B<-T> I<port>, B<--tcp-also> I<port>
+
+This option directs the server to listen to the given TCP port number for client
+requests in addition to using the normal communication method.  Use of this
+option without the B<-l> option is I<highly discouraged> unless you know what
+you are doing because there is no guarantee that B<moosicd> is secure against
+malicious input from a remote location.
+
+=item B<-l>, B<--local-only>
+
+This directs the server to only listen for TCP connections that originate from
+the local computer, refusing connections from remote hosts.  This only has an
+effect when B<--tcp> or B<--tcp-also> is used.
+
+=back
+
+=head1 CONFIGURATION
+
+B<moosicd> figures out how to play items in its queue by consulting its
+configuration file, which associates string patterns (in the form of
+Perl-compatible regular expressions) with commands.
+
+The format of this file is as follows: Every pair of lines forms a unit. The
+first line in a pair is a regular expression that will be matched against items
+in the queue. The second line in a pair is the command that will be used to play
+any items that match the regular expression. The name of the item to be played
+will be appended to the end of this command, unless the command line includes a
+special substitution string.
+
+The simplest kind of substitution string is "$item".  Every occurrence of
+"$item" in the command will be replaced with the name of the song to be played.
+The other kind of substitution is called "matched group substitution", and is
+used to refer to specific parts of the name of the song to be played.
+
+The command will not be interpreted by a shell, so don't bother trying to use
+shell variables or globbing or I/O redirection, and be mindful of how you use
+quotes and parentheses.  If you need any of these fancy features, wrap up the
+command in a real shell script (and remember to use an "exec" statement in your
+shell script to invoke the program that does the actual song playing, otherwise
+Moosic won't be able to do things like stop or pause the song).
+
+Blank lines and lines starting with a '#' character are ignored. Regular
+expressions specified earlier in this file take precedence over those specified
+later.
+
+=head1 FILES
+
+B<moosicd> makes use of several files, all of which are found in the
+F<.moosic/> directory in the home directory of the user who invoked the
+program (unless the -c or --config option is used).
+
+=over
+
+=item F<config>
+
+This is the configuration file that B<moosicd> uses to associate file-types to
+player commands, as explained above.
+
+=item F<server_log>
+
+B<moosicd> logs short notices of its activities to this file unless the B<-S>
+option is used. It usually contains nothing more than a history of what songs
+have been played.
+
+=item F<player_log>
+
+This file contains the output of the player commands which are spawned by
+B<moosicd>.
+
+=item F<socket>
+
+This is a socket file which is (normally) used to allow Moosic clients to
+contact the Moosic server. If B<moosicd> isn't shut down properly, this file
+will need to be removed by hand. You should leave this file alone under other
+circumstances.
+
+=back
+
+=head1 SEE ALSO
+
+L<moosic>(1), the standard command-line Moosic client.
+
+The chapter entitled "Regular Expression Syntax"
+L<http://www.python.org/doc/current/lib/re-syntax.html> from the section dealing
+with the B<re> module in the I<Python Library Reference>, for details on the
+syntax of a regular expression.
+
+=head1 AUTHOR
+
+Daniel Pearson <daniel@nanoo.org>

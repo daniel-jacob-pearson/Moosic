@@ -1,0 +1,89 @@
+=head1 Section 1: The Moosic Server's Data Model
+
+This section describes, in precise terms, the data objects that can be accessed
+and manipulated by sending requests to the Moosic server.
+
+=over
+
+=item song queue
+
+This is the foremost data object maintained by the Moosic server. It is an
+ordered sequence of strings that represents the queue of songs that are waiting
+to be played.  Each item in this list identifies a song that will be played by
+the Moosic server.  Usually, these items are the names of files on disk that
+contain each song, but this does not have to be the case.  For instance, an HTTP
+URL might be used to name a song if a program that can play songs from the Web
+is appropriately registered with the Moosic server (see "player configuration"
+later in this section).
+
+=item current song
+
+This is a string that identifies the song that is currently being played by the
+Moosic server.  If nothing is currently playing, then this will be the empty
+string.
+
+=item queue running flag
+
+This is a boolean value that indicates whether the Moosic server will start
+playing a new song as soon as the current song has finished and the song queue
+is not empty.
+
+=item pause flag
+
+This is a boolean value that indicates whether the current song is paused or
+not.
+
+=item loop mode flag
+
+This is a boolean value that sets "loop mode".  When loop mode is on, songs are
+returned to the end of the song queue when they finish playing instead of being
+discarded.
+
+=item history
+
+This is a list of songs that the Moosic server has finished playing.  Note that
+songs named in this list may have finished playing early at the request of a
+user (i.e. through use of the "next" command).  Each entry in this list is
+actually a 3-tuple of (song, start time, finish time).
+
+=item maximum history size
+
+This is the maximum number of songs that will be stored in the history list.
+Old entries are removed from the history to make room for newer entries when
+this limit is reached.
+
+=item player configuration
+
+This is an ordered mapping that associates regular expressions (text patterns)
+to programs.  For each regular expression, the associated program is expected to
+be able to play any queue items that match that regular expression.  Each
+program is a list in which the name of the executable file that contains the
+program is the first element and the program's arguments are the rest of the
+elements.
+
+=item last queue update
+
+This is the time at which the song queue was last modified.  It a floating-point
+number that represents time as the number of seconds since the epoch.
+
+=item server version
+
+This is a string that describes the version of the program that implements the
+Moosic server.  It has no specific, well-defined semantics.
+
+=item API version
+
+This is a pair of integers, one representing the "major" version, and the other
+representing the "minor" version.  These numbers are meant to provide some
+useful compatibility information to Moosic clients.  As this API changes, these
+numbers will change in the following ways.  If the API has been changed in a
+backward-compatible way (e.g. a new method was added or an existing method was
+overloaded), then the minor version will increase and the major version will
+remain unchanged.  However, if the API has been changed in such a way that
+existing code that uses the API might break (e.g.  a method was removed or its
+return value or parameter types were changed), then the major version will
+increase and the minor version may be reset to any value (although it will
+usually be reset zero).
+
+=back
+

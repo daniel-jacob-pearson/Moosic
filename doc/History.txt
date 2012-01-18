@@ -1,0 +1,76 @@
+This program has a long and boring history, with many past incarnations.  The
+primordial ancestor of moosic harks back to the age when all the music that I
+stored on my computer was in MIDI format, this being the age of tiny hard
+drives and slow Internet connections.  I quickly found that the very best
+software for playing MIDI music was Timidity.  My most frequent usage of
+Timidity involved a moderately long series of command-line options, so I used a
+shell alias to abbreviate this.  Now, instead of typing "timidity -idqq -Od", I
+would just type "tim".  "OK, big deal, a shell alias," you might say to
+yourself.  Well yeah.  I told you this would be boring.
+
+But it's not over yet.  After a while, my music collection started to include
+more interesting formats, including MP3, WAV, AU, and the various MOD formats.
+And so I wound up doing what most people probably do: I used a different
+command to play every different type of file.  Of course, this got old very
+quickly.  To me, it was all music.  What did I care what format it was in?
+Even worse, what if I wanted to queue up a long list of songs to be played?
+I would have to use a different command for every other file, and shuffling the
+list of songs to be played would be next to impossible.
+
+So what I did was write a shell script named "timmy" that processed files
+listed on the command-line in order by identifying the file's extension, and
+then calling the appropriate player for that file.  At first, I did any
+shuffling before timmy was called by using the randomize command (included with
+the Tracker MOD player) inside of backticks.  I soon tired of this and put a
+randomization option directly into timmy.
+
+The next big feature to be added was directory recursion.  Why say "timmy
+directory/*" when I could avoid hitting that hard-to-reach asterisk by typing
+"timmy directory" instead?  It was around this time, that I renamed timmy to
+"moosic".  I experimented with several ways of implementing this, and the last
+I used was a technique where the script to called itself every time it
+encountered a directory, passing the results of a "find" on that directory to
+the new invocation.  The problem with this was that I wanted to do more
+sophisticated forms of shuffling, and this was just a nightmare when you are
+programming in a language that doesn't have real lists.  Handling files with
+spaces in their names was also a nightmare.
+
+So I rewrote moosic in Perl.  At first it was a fairly direct transliteration,
+but it soon evolved into a very different sort of beast, internally.  However,
+I still could not manage to properly implement the types of shuffling that I
+wanted.  I eventually came to the conclusion that Perl's API for working with
+lists was just too annoying.
+
+So I rewrote moosic in Python.  I also became a bit more ambitious in my goals.
+I was starting to get rather annoyed that if I queued up a bunch of songs for
+playing, I had to wait for the current batch of songs to finish playing before
+being able to queue up more songs to be played afterward.  I realized that what
+I really wanted was a jukebox program.  I sat down and sketched out a little
+design for what I wanted, and decided that the client/server model would be the
+best solution to this problem.  This changed the user interface considerably.
+Previously, one would run the script on a bunch of files, and it would not
+return until all the files had finished being played.  Now, one uses the client
+to send a short command to the server and then returns immediately.
+
+I originally used UDP Internet sockets to facilitate communication between the
+client and the server, but I eventually switched to datagram-oriented Unix
+Domain sockets because they provide reliability and because they only allow
+communication among processes on the local machine (which means no security
+risk from remote network attacks).  Since Moosic 1.3, stream-oriented sockets
+are used instead of datagram-oriented sockets to resolve some ugliness issues
+that plagued earlier versions.
+
+Version 1.4 brought about a big change in the format of the data that the client
+and server sent to each other.  Previously, the data was formatted according to
+a simplistic RPC protocol of my own design.  Eventually the limitations of this
+protocol (such as lack of data-types) began to catch up with me.  I could have
+extended and improved the design of the existing protocol (and, in fact, I had
+done so once before between version 1.2 and version 1.3), but design work is
+always very hard, so I put this off for as long as I could.  Until one day,
+someone suggested that I provide an interface to allow clients to use XML-RPC to
+send requests to the server.  After researching XML-RPC, I decided that it would
+be an excellent replacement for my home-brewed RPC protocol.  This decision
+meant a lot less work for me, since I wouldn't have to maintain the
+implementation of my own protocol anymore.  It also meant a lot less work for
+third parties who were developing alternative clients, since they wouldn't have
+to reimplement a non-standard protocol or integrate my own implementation.

@@ -1,0 +1,87 @@
+=head1 Section 6: API Version History (ChangeLog)
+
+=over
+
+=item * S<1.8>
+
+First implemented in moosicd 1.5.1. The following methods were added:
+
+    swap
+
+=item * S<1.7>
+
+First implemented by moosicd 1.5.0. The following methods were added:
+
+    skip, current_time
+
+The following methods had their behavior significantly changed:
+
+    previous, next
+
+Specifically, the previous() method no longer activates queue advancement if it
+had been disabled before.  This means that calling previous() no longer
+necessarily causes a song to start playing.  The next() method was changed to
+more closely parallel the behavior of previous(): it takes a single optional
+integer argument to allow immediate advancement by more than one song at a time,
+and it has an effect even when no song is currently playing.  The new skip()
+method implements the exact same behavior that was previously exhibited by
+next().
+
+Last, and most importantly, the name of the default socket file for
+communicating with the server via unix sockets was changed from
+$CONFIG_DIR/socket-$HOSTNAME to $CONFIG_DIR/socket.  If you are a Python
+programmer and you use the updated moosic_factory.py file from Moosic version
+1.5.0, then you don't have to make any changes.  Otherwise, you must change your
+client's code to connect to the file named "socket" instead of the file named
+"socket-something.example.com".  If your client only talks to the Moosic server
+through TCP/IP, then you don't have to make any changes, of course.
+
+=item * S<1.6>
+
+First implemented by moosicd 1.4.10. The following methods were added:
+
+    getconfig
+
+=item * S<1.5>
+
+First implemented by moosicd 1.4.6. The following methods were added:
+
+    sub, sub_all, stop
+
+=item * S<1.4>
+
+First implemented by moosicd 1.4.5. The following methods were added:
+
+    previous
+
+=item * S<1.3>
+
+First implemented by moosicd 1.4.4. The following methods were added:
+
+    replace, replace_range, last_queue_update
+
+=item * S<1.2>
+
+First implemented by moosicd 1.4.2. The following methods were added:
+
+    cut_list, crop_list
+
+=item * S<1.1>
+
+First implemented by moosicd 1.4.1. The following methods were added:
+
+    is_looping, set_loop_mode, toggle_loop_mode
+
+=item * S<1.0>
+
+First implemented by moosicd 1.4.0. The following methods were included:
+
+    api_version, append, clear, crop, current, cut, die, filter,
+    get_history_limit, halt_queue, haltqueue, history, indexed_list, insert,
+    is_paused, is_queue_running, length, list, move, move_list, next, no_op,
+    pause, prepend, putback, queue_length, reconfigure, remove, reverse,
+    run_queue, runqueue, set_history_limit, showconfig, shuffle, sort,
+    system.listMethods, system.methodHelp, system.methodSignature,
+    system.multicall, toggle_pause, unpause, version
+
+=back

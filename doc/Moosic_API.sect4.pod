@@ -1,0 +1,25 @@
+=head1 Section 4: Writing a Moosic Client in Python
+
+As demonstrated in section 0, communicating with a Moosic server is very easy to
+do with Python.  In this section, I'll merely elaborate on the details that were
+omitted from section 0 for the sake of brevity.
+
+First of all, you should know that LocalMoosicProxy() can be called with a
+filename argument to specify the location of the Moosic server's socket file.
+This is useful if moosicd was started with the "-c" option.  Refer to the
+moosic_factory.py module's documentation (moosic_factory.html).
+
+Next, note that many of the Moosic server's methods accept or return special
+types of objects from the xmlrpclib module, namely Boolean and Binary.  These
+object types serve the purpose of bridging the small mismatch between the
+data-types supported by XML-RPC and Python's intrinsic data-types.  Boolean
+objects present no unusual problem, since they evaluate to a correct truth value
+without any extra effort.  However, you must take care when using the Moosic
+methods that accept or return Binary objects.  Read the documentation for the
+xmlrpclib module for details on how to work with these objects.  The basic
+technique boils down to wrapping up a string inside a Binary object before
+sending it to the server, and using the "data" attribute to access the string
+data within the Binary objects returned by the server.  Regular strings can't be
+used because XML-RPC's normal string data-type can't handle multiple 8-bit
+strings within a single request if the strings use different encodings.
+

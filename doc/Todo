@@ -1,0 +1,43 @@
+New features specific to moosic (the command-line client):
+  - Add support for a ".moosicrc" configuration file to store default options
+    that would otherwise have to be set on the command-line.
+  - Find a way to let users specify queue ranges that start with a negative
+    number without requiring a '--' to separate the range argument from the
+    option parser.  Possibilities: '[-9:-3]', '{-9:-3}', '(-9:-3)', '/-9:-3/',
+    '/-9:-3', '=-9:-3', ',-9:-3', '.-9:-3', ':-9:-3:'.  Surrounding with slashes
+    seems the best, since it doesn't conflict with shell meta-characters, and
+    it's easy to type, and it's one of the least visually unappealing choices.
+
+New features specific to moosicd:
+====== Short term goals ======
+  - Implement server methods that allow remote clients to inspect (a possibly
+    restricted portion of) the filesystem of the computer on which the server is
+    running. (Possibly in a separate daemon.)
+  - Implement server methods that allow remote clients to change the sound
+    volume. (Possibly in a separate daemon.)
+====== Long term goals ======
+  - Provide a hook for providing notification of when a song is started or
+    stopped.
+  - Devise a plugin-based system for handling individual songs.  This would
+    require a small revision to the config file format, but the impact of this
+    revision could be minimized.
+  - Measure the current song's total length in time.
+  - Measure the amount of time until the current song will finish.
+  - Support methods for seeking within a song. 
+  - Implement skipping to the next playlist in a list.
+
+Web site:
+  - Create a page listing and thanking contributors to the project.
+  - Create a page with a list of related projects.
+
+Invisible implementation details:
+  - Explicitly define and document the semantics of inserting the empty string
+    into the song queue.
+
+Alternative clients:
+  - Write a GTK+ GUI client (gmoosic).
+  - Write a GNUstep/Cocoa GUI client (MoosicStep/MoosicX).
+  - A curses client (cmoosic), a PHP-based web client (php-moosic), and an
+    interactive command interpreter client (moosicsh) are left as exercises to
+    the reader (or me, if I get really bored).
+  - Internationalize everything.

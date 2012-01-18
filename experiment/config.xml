@@ -1,0 +1,36 @@
+<?xml version="1.0" ?>
+<!DOCTYPE config [
+    <!ELEMENT config  (option*,section*)>
+    <!ELEMENT section (option*,section*)>
+    <!ATTLIST section name ID #REQUIRED>
+    <!ELEMENT option  (#PCDATA)>
+    <!ATTLIST option  name ID #REQUIRED>
+]>
+<config>
+    <option name="base_dir" type="string">.</option>
+    <section name="client">
+        <option name="shuffle_global" type="bool">True</option>
+        <option name="shuffle_args" type="bool">False</option>
+        <option name="shuffle_dir" type="bool">False</option>
+        <option name="ignore_case" type="bool">False</option>
+        <option name="dir_recurse" type="bool">True</option>
+        <option name="file_munge" type="bool">True</option>
+        <option name="auto_find" type="bool">False</option>
+        <option name="auto_grep" type="bool">False</option>
+        <option name="music_dir" type="string">~/music/</option>
+        <option name="discard_unplayable" type="bool">True</option>
+        <option name="auto_start_server" type="bool">True</option>
+        <option name="unix_address" type="string">${base_dir}/socket</option>
+        <option name="tcp_address" type="string"></option>
+        <option name="xmpp_address" type="string"></option>
+        <option name="" type="bool">True</option>
+    </section>
+    <section name="server">
+        <option name="history_size" type="int">50</option>
+        <option name="local_only" type="bool">True</option>
+        <option name="listen_unix" type="bool">True</option>
+        <option name="listen_tcp" type="bool">False</option>
+        <option name="listen_xmpp" type="bool">False</option>
+    </section>
+    <foo/>
+</config>

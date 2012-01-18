@@ -1,0 +1,184 @@
+----------------------
+
+Version 1.5.6:
+
+Four small bugs were fixed. Moosic has been placed in the public domain by way
+of The Unlicense.
+
+----------------------
+
+Version 1.5.5:
+
+Two fatal bugs that were casued by incompatible changes in the Python standard
+library were fixed.
+
+----------------------
+
+Version 1.5.4:
+
+An incompatibility which prevented moosicd from responding to requests
+correctly when run with Python 2.5 was fixed. Another obscure and rarely
+triggered bug was fixed.
+
+----------------------
+
+Version 1.5.3:
+
+The "move-pattern" command and the -C option were added to the command-line
+client. "move-pattern" moves all queued songs whose names match a regular
+expression to a given position in the queue.  The -C option causes the current
+song to be included in the output of the "list" and "plainlist" commands.
+
+----------------------
+
+Version 1.5.2:
+
+The server now logs the total playing time whenever it finishes playing a song.
+The server no longer saves state to disk if the state hasn't really changed.
+Range arguments can now be bracketed by non-numeric characters to prevent
+negative ranges from being mistaken for command line options. Various minor bugs
+were fixed.
+
+----------------------
+
+Version 1.5.1:
+
+New commands include "swap", "replace", "pl-replace", "interval-add", and
+"toggle-advance". The program is now installed with distutils (i.e. a
+"setup.py" script). By default, the client filters out songs that the server
+doesn't know how to play before adding them to the queue. A different method is
+used for automatically starting up the server. This new method doesn't use the
+$MOOSICD environment variable, and doesn't depend on the presence of a
+"moosicd" program at all. The code was organized into a package heirarchy that
+should ease develpment for third-party client developers who use Python.
+
+----------------------
+
+Version 1.5.0:
+
+The "help", "current-time", "advance", and "noadvance" commands were added to
+moosic.  The "noplay", "sleep", and "wake" aliases were removed from moosic.
+The next() and previous() server methods now behave differently.  The skip() and
+current_time() server methods were added.  Most importantly, the hostname is no
+longer appended to the names of the files stored in ~/.moosic/.  Client
+developers must update their code with the new moosic_factory.py, and users who
+want to use their old config and log files will have to rename them.
+
+----------------------
+
+Version 1.4.10:
+
+The "ispaused", "islooping", and "isadvancing" moosic commands were added.  The
+behavior of the "stagger" command was slightly changed.  Incompatibility bugs
+with BSD and Mac OS X were fixed.  The documentation for the server's API was
+cleaned up a bit.  Symlinks are now followed when scanning the music directory
+with "--auto-grep" or "--auto-find".  The getconfig() server method was added.
+The "--tcp-also" option was added to moosicd, making it possible to serve
+requests via a Unix socket and a TCP socket at the same time.
+
+----------------------
+
+Version 1.4.9:
+
+This release fixes a bug that was even stupider than the one fixed in the
+previous release.  This bug prevented moosicd from running because an essential
+module had been omitted from the build process.
+
+----------------------
+
+Version 1.4.8:
+
+The code for the --auto-find feature wasn't compatible with Python 2.2, and
+therefore crashed with an ugly exception.  The fix for this foolish bug was the
+only change in this release.
+
+----------------------
+
+Version 1.4.7:
+
+moosic can now automatically start moosicd as needed, so the user no longer has
+to start it by hand.  The --ignore-case option was added to moosic to make
+regular expressions case-insensitive.  The --auto-find and --auto-grep options
+were added to moosic, allowing songs to be added with search strings instead of
+file names.  moosicd now automatically puts itself into the background, as
+proper daemons should do.
+
+----------------------
+
+Version 1.4.6:
+
+The "sub" and "suball" commands were added, reflecting the new "sub" and
+"sub_all" moosicd methods.  The "stop" moosicd method was added, and the "stop"
+command now uses this method.  A race condition in the "previous" feature was
+fixed, and it now accepts an argument to specify how far back to retreat.  The
+Debian packaging was changed to improve compliance with the Debian Python policy
+and to create a package that works with both the stable and the testing or
+unstable distributions.  A pickling incompatibility between Python 2.2.x and
+2.3 was worked around.
+
+----------------------
+
+Version 1.4.5:
+
+The "previous" moosicd method and moosic command were added.  A bug in which the
+"putback" moosicd method didn't update the value returned by the
+"last_queue_update" moosicd method was fixed.  A small modification was made to
+help the program run with Python 2.2.  The "wipe" moosic command was fixed to
+work properly when loop mode is on.
+
+----------------------
+
+Version 1.4.4:
+
+The "stagger-merge" moosic client command was added. The "replace",
+"replace_range", and "last_queue_update" server methods were added. The
+Moosic_API document now uses POD as its source format. The manpages are now
+installed in a location that is compliant with FHS 2.2. A debian/ directory is
+now included to let you build your own .deb package.
+
+----------------------
+
+Version 1.4.3:
+
+The code for moosic was refactored to eliminate its horrendously long if-else
+chain. Various small bug fixes and cleanups were made. Extraneous HTML
+documentation is no longer included. The manpage for moosic was polished up. The
+"stagger-add" command was added to moosic.
+
+----------------------
+
+Version 1.4.2:
+
+An omission in version 1.4.1 which caused "moosicd --version" to raise a fatal
+exception was fixed. A bug which prevented moosicd from saving the current song
+when shutting down was fixed. A long-unnoticed bug was found, in which the
+result of "moosic list -- -1" would be an empty list. This command now lists the
+last song in the queue, as expected. The "length" moosic command was added.
+
+----------------------
+
+Version 1.4.1:
+
+moosicd saves state on shutdown and reloads it on startup. A loop mode was
+added. The "sort", "shuffle", and "reverse" commands can now be limited to a
+specific range in the song queue. Finally, match group substition was
+implemented in moosicd's song player. This allows you to insert portions of a
+song's identifier into the command that plays the song. For example, if the
+player configuration contains an entry with a regex of "^file://(.*?)\.(.*)$"
+and a command of "foo -t \2 \1", a song name of "file:///var/music/song.mid"
+will be played with a command line of "foo -t mid /var/music/song".
+
+----------------------
+
+Version 1.4:
+
+The server now communicates with clients via the XML-RPC protocol, and the
+server's API has been properly documented. Writing your own client for the
+Moosic server in the programming language of your choice should now be quite
+easy. Python version 2.2 or higher is now required. A few command aliases were
+added ("pre", "del", and "status"). moosicd now cleans up stale socket files
+automatically at startup, saving you the trouble of having to do it by hand. The
+server log now mentions the priority of each logged message. Many tiny bugs were
+fixed in various places.
+
+----------------------

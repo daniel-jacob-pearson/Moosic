@@ -1,0 +1,72 @@
+=head1 Section 0: Instructions for Impatient Developers
+
+=over
+
+=item 1.
+
+Plan to write your program with Python and xmlrpclib. xmlrpclib is included with
+Python 2.2 or later, but if you need to use an earlier version of Python,
+xmlrpclib can be downloaded from L<http://www.pythonware.com/products/xmlrpc/>.
+
+=item 2.
+
+If you can't or don't want to write your program with Python and xmlrpclib, you
+won't benefit from this section and will have to read section 2 of this
+document.
+
+=item 3.
+
+Create a proxy which communicates with moosicd:
+
+   >>> import moosic.client.factory
+   >>> proxy = moosic.client.factory.LocalMoosicProxy()
+
+=item 4.
+
+Read section 3 for the documentation of all the methods supported by the proxy
+object.
+
+=item 5.
+
+Use the proxy to get information from the server and to send commands to it.
+For example:
+
+   >>> proxy.list()
+   []
+   >>> proxy.is_queue_running()
+   True
+   >>> proxy.haltqueue()
+   True
+   >>> proxy.is_queue_running()
+   False
+   >>> proxy.append([xmlrpc.Binary(i) for i in 
+   ...       ['/home/daniel/music/Weird_Al/Pretty_Fly_for_a_Rabbi.mp3',
+   ...        '/home/daniel/music/Fiona_Apple/When_The_Pawn/04-Love_Ridden.ogg',
+   ...        "/home/daniel/music/Zelda/Great_Fairy's_Fountain.mid"]])
+   True
+   >>> proxy.list()
+   [<xmlrpclib.Binary instance at 0x843cf3c>,
+    <xmlrpclib.Binary instance at 0x8440e94>,
+    <xmlrpclib.Binary instance at 0x8440ebc>]
+   >>> [i.data for i in proxy.list()]
+   ['/home/daniel/music/Weird_Al/Pretty_Fly_for_a_Rabbi.mp3',
+    '/home/daniel/music/Fiona_Apple/When_The_Pawn/04-Love_Ridden.ogg',
+    "/home/daniel/music/Zelda/Great_Fairy's_Fountain.mid"]
+   >>> proxy.sort()
+   True
+   >>> [i.data for i in proxy.list()]
+   ['/home/daniel/music/Fiona_Apple/When_The_Pawn/04-Love_Ridden.ogg',
+    '/home/daniel/music/Weird_Al/Pretty_Fly_for_a_Rabbi.mp3',
+    "/home/daniel/music/Zelda/Great_Fairy's_Fountain.mid"]
+
+=item 6.
+
+If you wish to communicate with a moosicd that is listening for requests on
+an IP socket instead of a Unix domain socket, you should use InetMoosicProxy
+instead of LocalMoosicProxy.  Here's an example:
+
+   >>> import moosic.client.factory
+   >>> proxy = moosic.client.factory.InetMoosicProxy('example.com', 8080)
+
+=back
+

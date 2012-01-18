@@ -1,0 +1,197 @@
+This is a guide to people who are interested in reading and understanding (and
+possibly modifying) the source code for Moosic.  It is not a guide for
+developers writing new Moosic clients.  See Moosic_API.{html,1,pod} for that.
+
+
+=== Code Organization ===
+
+The source code is organized into different files in the following way:
+
+  Modules that are useful to any part of Moosic:
+    moosic/utilities.py - generally useful classes and functions.
+
+  Modules that implement the server/daemon (moosicd):
+    moosic/server/main.py    - the program's entry point.
+    moosic/server/methods.py - the methods exported by the Moosic client API.
+    moosic/server/support.py - various helper classes and functions for moosicd.
+    moosic/server/xmlrpc_registry.py - a class for collecting the server
+                                       methods, dispatching them, and providing
+                                       introspection for them.
+    moosic/server/daemonize.py - a function for turning a program into a daemon.
+
+  Modules that are useful for any Moosic client:
+    moosic/client/factory.py - functions which create Moosic server proxies.
+
+  Modules that implement the command-line client (moosic):
+    moosic/client/cli/main.py       - the program's entry point.
+    moosic/client/cli/dispatcher.py - the functions that implement the commands
+                                      recognized by moosic.
+
+All files that do not end with the .py suffix are not program source code, but
+are either documentation or part of the installation system.  The installation
+system is based upon distutils, which is a Python standard for module
+distribution and installation.
+
+
+=== Adding New Commands or Methods ===
+
+moosicd and moosic are programmed in a mostly procedural style, and so the basic
+unit of program modularity and extensibility is the procedure.  Both programs
+each have a registration facility that is designed to allow the addition of new
+commands or server methods cleanly and easily, with all code for the new command
+or method unified in a single location in the source code.
+
+--------- Adding a New Command to "moosic" ---------
+
+The main steps of this task are: (1) Add a function with a specific signature to
+the moosic/client/cli/dispatcher.py module, (2) decorate this function with a
+few special attributes, and (3) insert the new function into the "dispatcher"
+dictionary object contained in moosic/client/cli/dispatcher.py.  After this is
+done, the moosic program will automatically support a new command whose name is
+the same as the name of the function that was added (more or less).
+
+In more detail:
+
+(1) The function must take three arguments.
+
+The first argument, "moosic", is a proxy object that lets you execute any of the
+server's methods. This object is most useful for actually implementing the body
+of the function.
+
+The second argument, "arglist", is a list of the arguments that were specified
+on the command line by the user.  arglist is similar to sys.argv, but it does
+not contain any command line options, nor the program name (argv[0]), nor the
+name of the moosic command.
+
+The third argument, "options", is a dictionary of information that varies from
+one invoacation of moosic to the next.  This information includes such data as
+the shuffling mode and the location information for contacting the Moosic
+server.
+
+The return value of the function can be any sort of object.  The only meaning
+that this return value has comes from the fact that this value is passed as the
+parameter to sys.exit().  Therefore, it affects the exit code of the program as
+a whole, but does nothing more.  Refer to the documentation for sys.exit() to
+see how different object values affect a program's exit code.
+
+(2) After the new function has been written, it should have some auxilliary data
+attributes associated with it.
+
+First of all, the new function should have a doc-string that summarizes its
+syntax for a command-line user.  This doc-string should start with the command's
+name, followed by a terse summary of the command's arguments (using
+meta-syntactic variables when appropriate), followed by a dash, and finally
+ending with a brief description of what the command will do.  The whole doc
+string should be preferably a single line less than 80 characters long, and
+should be no longer than two lines (each 80 characters long).
+
+Next, the command's function object should have an attribute named "category"
+whose value is a string that is equal to one of the keys in the dictionary named
+"command_categories", which is defined in moosic/client/cli/dispatcher.py.  An
+appropriate category from command_categories should be chosen.  This value, like
+the above-mentioned doc-string, is only used when generating documentation for
+the commands and doesn't affect the behavior of the command being implemented.
+If the "category" attribute is not one of the keys of command_categories, then
+the new command will not be listed by the "help" command nor the
+"--showcommands" option.
+
+The new command's function object should also have an attribute named "num_args"
+whose value is a short string that describes how many arguments the user will be
+allowed to specify for the command.  This value is used by the check_args()
+function (which is defined in moosic/client/cli/dispatcher.py) to verify that an
+acceptable number of arguments have been given to a particular command.  The
+valid values for num_args are mentioned in the documentation for the
+check_args() function.  If num_args doesn't have one of these valid values, then
+argument checking simply won't be done for the new command.
+
+(3) Finally, the new function can be added to the "dispatcher" dictionary.  This
+should be done by creating a new dictionary entry whose key is the name of the
+command and whose value is the newly defined function.  If you look at the
+existing moosic commands as examples, you'll notice that the key for each entry
+in the dispatcher dictionary is automatically extracted from the function object
+by feeding the function's "__name__" attribute to the unmangle() utility
+function (defined in moosic/client/cli/dispatcher.py).  You are encouraged to
+follow this example, but it is hardly necessary.
+
+That's it.  If you've done these steps, you've added a new command to moosic.
+
+
+
+--------- Adding a New Server Method to "moosicd" ---------
+
+On the surface, this task seems much simpler than adding a new command to
+moosic: simply add a new function to moosic/server/methods.py and feed it to the
+register() method of the moosicd_methods object (which is defined within
+moosic/server/methods.py).  The new function can have any number of arguments,
+and doesn't need to have any unusual attributes set upon it.
+
+However, actually programming a new server method requires awareness of the
+stateful environment that exists outside of the local function that implements
+the method.  By contrast, "moosic" is a relatively stateless program (since the
+state is primarily maintained by the server), and therefore each function that
+implements each moosic command doesn't have to worry about any objects that were
+not explicitly passed to the function as arguments.  In order to keep the task
+of programming server methods relatively sane, all of the server's global data
+is contained within an object named "data" (originally defined in
+moosic/server/support.py, and imported by the other modules that comprise
+moosicd).  This lets a programmer easily distinguish between a method's local
+variables and the server's state data.  The public attributes of this "data"
+object are listed and described in detail in the Moosic API documentation (which
+is available in several formats, including HTML, manpage, and POD).  The private
+attributes are documented with comments in moosic/server/support.py.  Note that
+trying to add new attributes to the "data" object during the course of normal
+use will raise an exception.  Adding new attributes to "data" must be done in
+its class definition.
+
+If the new server method is going to modify any of the server's state data, then
+the appropriate lock should be acquired first by calling "data.lock.acquire()".
+The code that modifies the state should follow immediately after the lock is
+acquired.  This modification should be done within a "try" block that ends with
+a "finally" clause that contains a call to "data.lock.release()".  The time
+spent holding the lock should be minimized as much as possible to avoid delaying
+any other threads that might wish to acquire the lock.  The following code
+demonstrates how to perform such a modification with the proper locking:
+
+    data.lock.acquire()
+    try:
+        # mutate one of the attributes of data
+    finally:
+        data.lock.release()
+
+Since server methods are exported to clients via the XML-RPC protocol, the types
+of the objects that the new server method takes as parameters and outputs
+through its return value should be limited to those types supported by XML-RPC.
+A discussion of these supported types and their relationship to the Python type
+system can be found in the documentation for the "xmlrpclib" module in the
+Python Library Reference.
+
+One corollary to the requirement to conform to XML-RPC types is that the new
+function should have an explicit return value.  If it doesn't, then Python will
+automatically make the function return None, which isn't supported as a valid
+value for passing through XML-RPC (according to the more strict implementations
+of the XML-RPC standard).
+
+As mentioned very briefly above, after the function that implements the new
+server method has been defined in moosic/server/methods.py, it must be
+registered into the moosicd_methods object by calling that object's register()
+method.  This register() method takes the function to be registered as its first
+argument, and a specification of that function's type signature as its second
+argument.  A third argument can be given to specify that the function should be
+registered under a name other than the identifier used to reference the function
+in the Python source code (i.e. the function's name).  However, this argument is
+commonly not needed.
+
+The second argument to register() warrants further elaboration.  The information
+in this argument is used only for the purposes of documentation, which is quite
+important since the developer of a Moosic client will need to know how to call
+the new server method before she can use it.  The form of this argument is a
+list of one or more lists.  Each of these lists specifies a valid type signature
+for the method.  (More than one signature is possible because XML-RPC supports
+function overloading.)  The first element of each signature list specifies the
+type of the method's return value, and all subsequent elements specify the types
+of the method's parameters (in order).  These list elements are symbolic
+constants that represent datatypes.  These constants are imported from the
+xmlrpc_registry module which is a part of moosicd's source code.
+
+After adding the new function and registering it, the process of adding a new
+server method is complete.

@@ -1,0 +1,117 @@
+# ~/.moosic/config
+# This file associates filetypes with commands which play them.
+#
+# The format of this file is as follows:  Every pair of lines forms a unit.
+# The first line in a pair is a regular expression that will be matched against
+# items in the play list.  The second line in a pair is the command that will
+# be used to play any items that match the regular expression.
+#
+# The name of the item to be played will be appended to the end of the command
+# line, unless the string "$item" occurs in the command, in which case every
+# occurrence of "$item" will be replaced with the name of the item to be played.
+# The command will not be interpreted by a shell, so don't try tricks with
+# quotes or globbing.
+#
+# Blank lines and lines starting with a '#' character are ignored.  Regular
+# expressions specified earlier in this file take precedence over those
+# specified later.
+
+# The configuration data in this file is what the author of Moosic actually uses
+# himself, and serves as an excellent launch-point into a discussion of the
+# features that can be exploited here.
+
+# First, we have a rather basic entry.  It associates the ogg123 program with
+# .ogg files.  You should notice that the regular expression includes "(?i)" at
+# the beginning to make it case-insensitive.  It then matches files that have
+# ".ogg" in their name.  The "." character is escaped with a backslash ("\"),
+# because otherwise the "." character would have a special meaning.  Finally,
+# the regular expression ends with "$" so that it only matches when the ".ogg"
+# string occurs at the end of a filename.
+#
+# A few options are passed to the ogg123 program.  They aren't terribly
+# noteworthy.  The -q option makes the program produce less printed output, and
+# the "-d arts" option makes the program send its audio output to the aRts sound
+# daemon.
+(?i)\.ogg$
+ogg123 -q -d arts
+
+# This second entry uses a regular expression that is ever so slightly more
+# complicated than the one in the previous entry.  It uses a character class
+# (with only two members: "2" and "3") so that it will match both .mp3 and mp2
+# files.  Otherwise, it is quite analogous to the previous entry.
+(?i)\.mp[23]$
+mpg321 -q -o arts
+
+# The regular expression in this next entry uses the "?" special character to
+# indicate that the previous character is optional.  This allows this expression
+# to match both files that end with ".mid" and those that end with ".midi".
+#
+# You'll notice that the artsdsp wrapper program is used to start timidity
+# instead of invoking timidity directly.  This is because timidity's aRts output
+# driver is buggy and crashes when I try to use it.
+(?i)\.midi?$
+artsdsp timidity -idqq
+
+# This entry demonstrates the consise way of associating a whole bunch of
+# filename extensions with a single program.  This is done in the regular
+# expression by separating all of the various extensions with the special "|"
+# character, and then grouping all of the separated extensions together with
+# parentheses.
+#
+# Again, the artsdsp program is used to wrap a song player that doesn't support
+# aRts very well.  Not so special.
+(?i)\.(mod|xm|s3m|stm|it|mtm|669|amf)$
+artsdsp mikmod -q -nohq
+
+# This entry isn't much different from the previous one.  If you look closely,
+# you'll notice the return of the special "?" character to allow both "mpg" and
+# "mpeg" to be matched without having to type out both separately.
+#
+# This entry also demonstrates the best options (IMHO) to use with the
+# ever-impressive mplayer program if you want to set it up as a song handler for
+# the Moosic server.  You might even be tempted to use mplayer as the one and
+# only song handler in your Moosic config, since mplayer can play practically
+# any audio file format in the universe.
+(?i)\.(avi|asf|mpe?g|wav|aiff|aifc|aif|au|cdr)$
+mplayer -vo null -vc null -nocache -really-quiet
+
+# This entry serves as a simple demonstration of the "match group substitution"
+# feature, and also demonstrates one way to play audio CDs with Moosic.
+#
+# Match group substitution allows you to insert specific parts of the name of
+# the song to be played into the command.  Whenever you use parentheses in a
+# regular expression, a "match group" is created.  This match group represents
+# the piece of the song name that matched the part of the regular expression
+# within the parentheses.  The first match group can be inserted into the
+# command by using the string "\1".  The second group can be inserted with "\2",
+# and so on.
+#
+# In this case, the regular expression has a single match group, which captures
+# the string of non-space characters following the "cda://", if any.  ("cda" is
+# supposed to stand for Compact Disc Audio, and the syntax of cda://<track> is
+# meant to resemble a URI.  Because, hey, URIs are trendy.)  The string captured
+# by the match group is then passed to the program that will play a particular
+# CD track.
+#
+# In case you haven't already guessed, this entry lets you put a CD track into
+# the song queue by adding something like "cda://8".  You can also take
+# advantage of the fact that the parts of the song name that are not part of the
+# match group are not passed to the player program by including some useful
+# information about the song, like its title.  For example:
+#
+#       moosic -n add "cda://11 - I Only Have Eyes for You"
+#
+# The "takcd" program is used here to play each CD track.  I don't know of any
+# other audio CD player that is suitable for use as a song handler for Moosic.
+# You can find takcd at http://bard.sytes.net/takcd/.
+(?i)^cda://(\S*)
+takcd \1
+
+# This final example demonstrates a cute bit of recursion.  It tells Moosic to
+# call itself in order to expand a playlist file that it encounters in the
+# queue.
+(?i)\.m3u$
+moosic -o pl-add
+
+# If you want to learn more about what you can do with the regular expressions
+# in this file, read http://www.python.org/doc/current/lib/re-syntax.html

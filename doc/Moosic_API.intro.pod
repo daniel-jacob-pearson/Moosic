@@ -1,0 +1,19 @@
+=head1 NAME
+
+Moosic_API - How to write your own Moosic client.
+
+=head1 Introduction
+
+"moosicd" is a program that implements the server portion of the Moosic jukebox
+system.  This server provides services for manipulating a queue of songs to be
+played, as well as for controlling the playing of these songs.  A Moosic client
+sends requests to the server, and receives data in response to these requests.
+The "moosic" command line utility is the canonical Moosic client, and provides
+a way to control a Moosic server from an interactive command shell or from a
+shell script.  However, you might not be satisfied by the interface that is
+provided by the "moosic" command, so I have written this document to describe
+how to communicate with a Moosic server in your own programs.
+
+[This document was written by Daniel Pearson <daniel@nanoo.org>, and has
+been placed into the public domain.]
+

@@ -1,0 +1,23 @@
+Change the VERSION variable in:
+README.txt setup.py doc/Makefile moosic/__init__.py
+
+if [ `./scripts/docgrabber | diff doc/Moosic_API.sect3.pod -` ]; then
+    Recreate Moosic_API.sect3.pod by running the docgrabber script on a fresh
+    running instance of moosicd.
+
+    Note any new moosicd methods in Moosic_API.sect6.pod, and update the
+    API_MAJOR_VERSION and API_MINOR_VERSION variables in
+    moosic/server/methods.py, if necessary.
+fi
+
+Make a note of this release in ChangeLog and compose a new entry for NEWS.
+
+make -C doc
+
+python setup.py sdist -d ..
+
+Update index.php and download.php.
+
+Relink the "current" and "live" symlinks.
+
+Submit to freshmeat.

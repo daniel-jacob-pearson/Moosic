@@ -1,0 +1,28 @@
+=head1 Section 5: Writing a Moosic Client in Another Language
+
+If you are not using Python to write your Moosic client, the first issue to deal
+with is deciding upon an XML-RPC implementation.  For most popular programming
+languages, there are multiple XML-RPC implementations available.  Most of the
+possibilities are listed at
+L<http://www.xmlrpc.com/directory/1568/implementations>.  Since XML-RPC is an
+open specification, you can create your own implementation if you don't like any
+of the ones that already exist.
+
+Once you've got an XML-RPC library that you like, the big hurdle to overcome is
+to make that library send its RPC calls over a Unix socket instead of an IP
+socket.  I was able to do this pretty easily with Python's xmlrpclib since it is
+designed to allow pluggable transport methods:  all I had to do was subclass my
+own Transport type and plug it back into the original library's classes.  (If
+your language and/or library of choice makes this task difficult, then you may
+begin to understand why some Python programmers are so smug.)
+
+After you are capable of sending XML-RPC requests through a Unix socket, you can
+go ahead and start sending requests to a Moosic server.  Refer to the end of
+section 2 for information on how to address a Moosic server.  Refer to section 3
+for a list of valid server requests.
+
+If you can't be bothered to find or hack together an XML-RPC library that works
+with Unix sockets, then you can still talk to a Moosic server that is listening
+on an IP socket, but this is less than ideal since listening on an IP socket is
+not default behavior for most Moosic servers.
+

@@ -1,0 +1,901 @@
+NAME
+
+    Moosic_API - How to write your own Moosic client.
+
+Introduction
+
+    "moosicd" is a program that implements the server portion of the Moosic
+    jukebox system. This server provides services for manipulating a queue
+    of songs to be played, as well as for controlling the playing of these
+    songs. A Moosic client sends requests to the server, and receives data
+    in response to these requests. The "moosic" command line utility is the
+    canonical Moosic client, and provides a way to control a Moosic server
+    from an interactive command shell or from a shell script. However, you
+    might not be satisfied by the interface that is provided by the "moosic"
+    command, so I have written this document to describe how to communicate
+    with a Moosic server in your own programs.
+
+    [This document was written by Daniel Pearson <daniel@nanoo.org>, and has
+    been placed into the public domain.]
+
+Section 0: Instructions for Impatient Developers
+
+    1.  Write your program with Python and xmlrpclib. xmlrpclib is included
+        with Python 2.2 or later, but if you need to use an earlier version
+        of Python, xmlrpclib can be downloaded from
+        <http://www.pythonware.com/products/xmlrpc/>.
+
+    2.  Copy the moosic_factory.py module from the Moosic source code
+        tarball to a place where your program can reach it.
+
+    3.  Create a proxy which communicates with moosicd:
+
+           >>> import moosic_factory
+           >>> proxy = moosic_factory.LocalMoosicProxy()
+
+    4.  Read section 3 for the documentation of all the methods supported by
+        the proxy object.
+
+    5.  Use the proxy to get information from the server and to send
+        commands to it. For example:
+
+           >>> proxy.list()
+           []
+           >>> proxy.is_queue_running()
+           <Boolean True at 81cad1c>
+           >>> proxy.haltqueue()
+           <Boolean True at 81cad1c>
+           >>> proxy.is_queue_running()
+           <Boolean False at 81c90d4>
+           >>> proxy.append([xmlrpc.Binary(i) for i in 
+           ...       ['/home/daniel/music/Weird_Al/Pretty_Fly_for_a_Rabbi.mp3',
+           ...        '/home/daniel/music/Fiona_Apple/When_The_Pawn/04-Love_Ridden.ogg',
+           ...        "/home/daniel/music/Zelda/Great_Fairy's_Fountain.mid"]])
+           <Boolean True at 81cad1c>
+           >>> proxy.list()
+           [<xmlrpclib.Binary instance at 0x843cf3c>,
+            <xmlrpclib.Binary instance at 0x8440e94>,
+            <xmlrpclib.Binary instance at 0x8440ebc>]
+           >>> [i.data for i in proxy.list()]
+           ['/home/daniel/music/Weird_Al/Pretty_Fly_for_a_Rabbi.mp3',
+            '/home/daniel/music/Fiona_Apple/When_The_Pawn/04-Love_Ridden.ogg',
+            "/home/daniel/music/Zelda/Great_Fairy's_Fountain.mid"]
+           >>> proxy.sort()
+           <Boolean True at 81cad1c>
+           >>> [i.data for i in proxy.list()]
+           ['/home/daniel/music/Fiona_Apple/When_The_Pawn/04-Love_Ridden.ogg',
+            '/home/daniel/music/Weird_Al/Pretty_Fly_for_a_Rabbi.mp3',
+            "/home/daniel/music/Zelda/Great_Fairy's_Fountain.mid"]
+
+    6.  If you wish to communicate with a moosicd that is listening for
+        requests on an IP socket instead of a Unix domain socket, you should
+        use InetMoosicProxy instead of LocalMoosicProxy. Here's an example:
+
+           >>> import moosic_factory
+           >>> proxy = moosic_factory.InetMoosicProxy('example.com', 8080)
+
+Section 1: The Moosic Server's Data Model
+
+    This section describes, in precise terms, the data objects that can be
+    accessed and manipulated by sending requests to the Moosic server.
+
+    song queue
+        This is the foremost data object maintained by the Moosic server. It
+        is an ordered sequence of strings that represents the queue of songs
+        that are waiting to be played. Each item in this list identifies a
+        song that will be played by the Moosic server. Usually, these items
+        are the names of files on disk that contain each song, but this does
+        not have to be the case. For instance, an HTTP URL might be used to
+        name a song if a program that can play songs from the Web is
+        appropriately registered with the Moosic server (see "player
+        configuration" later in this section).
+
+    current song
+        This is a string that identifies the song that is currently being
+        played by the Moosic server. If nothing is currently playing, then
+        this will be the empty string.
+
+    queue running flag
+        This is a boolean value that indicates whether the Moosic server
+        will start playing a new song as soon as the current song has
+        finished and the song queue is not empty.
+
+    pause flag
+        This is a boolean value that indicates whether the current song is
+        paused or not.
+
+    loop mode flag
+        This is a boolean value that sets "loop mode". When loop mode is on,
+        songs are returned to the end of the song queue when they finish
+        playing instead of being discarded.
+
+    history
+        This is a list of songs that the Moosic server has finished playing.
+        Note that songs named in this list may have finished playing early
+        at the request of a user (i.e. through use of the "next" command).
+        Each entry in this list is actually a 3-tuple of (song, start time,
+        finish time).
+
+    maximum history size
+        This is the maximum number of songs that will be stored in the
+        history list. Old entries are removed from the history to make room
+        for newer entries when this limit is reached.
+
+    player configuration
+        This is an ordered mapping that associates regular expressions (text
+        patterns) to programs. For each regular expression, the associated
+        program is expected to be able to play any queue items that match
+        that regular expression. Each program is a list in which the name of
+        the executable file that contains the program is the first element
+        and the program's arguments are the rest of the elements.
+
+    last queue update
+        This is the time at which the song queue was last modified. It a
+        floating-point number that represents time as the number of seconds
+        since the epoch.
+
+    server version
+        This is a string that describes the version of the program that
+        implements the Moosic server. It has no specific, well-defined
+        semantics.
+
+    API version
+        This is a pair of integers, one representing the "major" version,
+        and the other representing the "minor" version. These numbers are
+        meant to provide some useful compatibility information to Moosic
+        clients. As this API changes, these numbers will change in the
+        following ways. If the API has been changed in a backward-compatible
+        way (e.g. a new method was added or an existing method was
+        overloaded), then the minor version will increase and the major
+        version will remain unchanged. However, if the API has been changed
+        in such a way that existing code that uses the API might break (e.g.
+        a method was removed or its return value or parameter types were
+        changed), then the major version will increase and the minor version
+        may be reset to any value (although it will usually be reset zero).
+
+Section 2: The Low-Level Details of Client-Server Communication
+
+    The information in this section is generally only necessary to people
+    who wish to write a Moosic client in a programming language other than
+    Python. If you are using Python to write a Moosic client, then you can
+    use the classes LocalMoosicProxy and InetMoosicProxy from the
+    moosic_factory.py module, and blissfully ignore most of these gory
+    details. However, Python programmers can also benefit from reading this
+    section, as it will deepen their understanding of Moosic's inter-process
+    communication model.
+
+    The first thing to know about writing your own Moosic client is that
+    communication between the client and server is done through a BSD-style
+    socket. Read the "socket" manual page (and related manual pages) on a
+    Unix system if you are unfamiliar with BSD sockets. The socket used by
+    Moosic belongs to the Unix-domain protocol family (PF_UNIX or PF_LOCAL)
+    and has a type of SOCK_STREAM. This means that a Moosic client can only
+    communicate with a Moosic server that is running on the same computer as
+    the client. This limitation is a very purposeful part of Moosic's
+    design. It has the advantage of vastly reducing the consequences of any
+    security flaws that Moosic might have.
+
+    If you really, really think that you need the client and the server to
+    run on separate hosts, then you can run moosicd with the -t option,
+    which tells it to listen on a TCP/IP socket instead of a Unix domain
+    socket. I recommend firewalling such a port very carefully.
+
+    Regardless of which kind of socket is used by the server, XML-RPC is
+    used as the data protocol for requests and responses. For an
+    introduction to XML-RPC, see the XML-RPC homepage
+    <http://www.xmlrpc.com/> and the XML-RPC HOWTO
+    <http://xmlrpc-c.sourceforge.net/xmlrpc-howto/xmlrpc-howto.html>. Python
+    users should note that if the XML-RPC HOWTO tells you that you need to
+    install a third-party library to use XML-RPC, it is assuming that you
+    are using a Python version earlier than 2.2. Since version 2.2, Python
+    has included the xmlrpclib module in its standard library.
+
+    In summary, all you need to do to talk to a Moosic server in your own
+    program is to send XML-RPC requests to the appropriate address. By
+    default, the appropriate address for contacting moosicd is the file
+    named "socket" in a directory named ".moosic" in the home directory of
+    the user that started moosicd. If moosicd is started with the -c option,
+    then the directory that contains "socket" will be the argument provided
+    to the -c option instead of ~/.moosic. If moosicd is started with the -t
+    option, then clients will have to address it by using a (host, port)
+    pair instead of a filename.
+
+Section 3: Valid Moosic Server Methods
+
+    moosicd's XML-RPC server implements the introspection API mentioned on
+    <http://xmlrpc-c.sourceforge.net/xmlrpc-howto/xmlrpc-howto-api-introspec
+    tion.html>, so the API presented by moosicd is essentially
+    self-documenting. Thus, the information in this section has been
+    automatically generated by querying a running Moosic server.
+
+    The Moosic API contains the following methods:
+
+    array "api_version" ()
+           Returns the version number for the API that the server implements.
+    
+               Arguments: None.
+               Return value: The version number, which is a 2-element array of
+                   integers.  The first element is the major version, and the second
+                   element is the minor version.
+        
+    boolean "append" (array)
+           Adds items to the end of the queue.
+    
+               Argument: An array of (base64-encoded) strings, representing the items to be
+                   added.
+                 * When adding local filenames to the queue, only absolute pathnames should
+                   be used.  Using relative pathnames would be foolish because the server
+                   has no idea what the client's current working directory is.
+               Return value: Nothing meaningful.
+        
+    boolean "clear" ()
+           Removes all items from the queue.
+    
+               Arguments: None.
+               Return value: Nothing meaningful.
+        
+    boolean "crop" (array)
+           Remove all queued items that do not fall within the given range.
+    
+               Arguments: An array of integers that represents a range.
+                 * If the range contains a single integer, it will represent all members
+                   of the queue whose index is greater than or equal to the value of the
+                   integer.
+                 * If the range contains two integers, it will represent all members of
+                   the queue whose index is greater than or equal to the value of the
+                   first integer and less than the value of the second integer.
+                 * If the range contains more than two integers, an error will occur.
+               Return value: Nothing meaningful.
+        
+    boolean "crop_list" (array)
+           Removes all items except for those referenced by a list of positions.
+       
+               Arguments: An array of integers that represents a list of the positions of
+                   the items to be kept. 
+               Return value: Nothing meaningful.
+        
+    base64 "current" ()
+           Returns the name of the currently playing song.
+    
+               Arguments: None.
+               Return value: The name of the currently playing song.
+        
+    double "current_time" ()
+           Returns the amount of time that the current song has been playing.
+    
+               Arguments: None.
+               Return value: The number of seconds that the current song has been playing.
+        
+    boolean "cut" (array)
+           Remove all queued items that fall within the given range.
+    
+               Arguments: An array of integers that represents a range.
+                 * If the range contains a single integer, it will represent all members
+                   of the queue whose index is greater than or equal to the value of the
+                   integer.
+                 * If the range contains two integers, it will represent all members of
+                   the queue whose index is greater than or equal to the value of the
+                   first integer and less than the value of the second integer.
+                 * If the range contains more than two integers, an error will occur.
+               Return value: Nothing meaningful.
+        
+    boolean "cut_list" (array)
+           Removes the items referenced by a list of positions within the queue.
+       
+               Arguments: An array of integers that represents a list of the positions of
+                   the items to be removed. 
+               Return value: Nothing meaningful.
+        
+    boolean "die" ()
+           Tells the server to terminate itself.
+    
+               Arguments: None.
+               Return value: Nothing meaningful.
+        
+    boolean "filter" (base64)
+    boolean "filter" (base64, array)
+           Removes all items that don't match the given regular expression.
+    
+               Arguments: A regular expression that specifies which items to keep.
+                 * Optionally, an array of integers may be given as a second argument.
+                   This argument represents a range to which the filtering will be
+                   limited.
+                 * If the range contains a single integer, it will represent all members
+                   of the queue whose index is greater than or equal to the value of the
+                   integer.
+                 * If the range contains two integers, it will represent all members of
+                   the queue whose index is greater than or equal to the value of the
+                   first integer and less than the value of the second integer.
+                 * If the range contains more than two integers, an error will occur.
+               Return value: Nothing meaningful.
+        
+    int "get_history_limit" ()
+           Gets the limit on the size of the history list stored in memory.
+    
+               Arguments: None.
+               Return value: The maximum number of history entries that the server will
+                   remember.
+        
+    array "getconfig" ()
+           Returns a list of the server's filetype-player associations.
+       
+               Arguments: None.
+               Return value: An array of pairs. The first element of each pair is a
+                   (base64-encoded) string that represents a regular expression pattern,
+                   and the second element is a (base64-encoded) string that represents the
+                   system command that should be used to handle songs that match the
+                   corresponding pattern.
+        
+    boolean "halt_queue" ()
+           Stops any new songs from being played. Use run_queue() to reverse this
+               state.
+    
+               Arguments: None.
+               Return value: Nothing meaningful.
+        
+    boolean "haltqueue" ()
+           Stops any new songs from being played. Use run_queue() to reverse this
+               state.
+    
+               Arguments: None.
+               Return value: Nothing meaningful.
+        
+    array "history" ()
+    array "history" (int)
+           Returns a list of the items that were recently played.
+    
+               Arguments: If a positive integer argument is given, then no more than that
+                   number of entries will be printed.  If a number is not specified, or if
+                   zero is given, then the entire history is printed.  The result is
+                   undefined if a negative integer argument is given (but does not raise an
+                   exception).
+               Return value: An array of triples, each representing a song that was played
+                   along with the times that it started and finished playing.
+                 * The first member of the pair is a (base64-encoded) string which
+                   represents the song that was previously played.
+                 * The second member of the pair is a floating point number which
+                   represents the time that the song started playing in seconds since the
+                   epoch.
+                 * The third member of the pair is a floating point number which
+                   represents the time that the song finished playing in seconds since the
+                   epoch.
+        
+    struct "indexed_list" ()
+    struct "indexed_list" (array)
+           Lists the song queue's contents. If a range is specified, only the
+               items that fall within that range are listed.
+    
+               This differs from list() only in its return value, and is useful when you
+               want to know the starting position of your selected range within the song
+               queue (which can be different than the starting index of the specified range
+               if, for example, the starting index is a negative integer).
+    
+               Arguments: Either none, or an array of integers that represents a range.
+                 * If no range is given, the whole list is returned.
+                 * If the range contains a single integer, it will represent all members
+                   of the queue whose index is greater than or equal to the value of the
+                   integer.
+                 * If the range contains two integers, it will represent all members of
+                   the queue whose index is greater than or equal to the value of the
+                   first integer and less than the value of the second integer.
+                 * If the range contains more than two integers, an error will occur.
+               Return value: A struct with two elements. This first is "list", an array of
+                   (base64-encoded) strings, representing the selected range from the song
+                   queue's contents. The second is "start", an integer index value that
+                   represents the position of the first item of the returned list in the
+                   song queue.
+        
+    boolean "insert" (array, int)
+           Inserts items at a given position in the queue.
+    
+               Arguments: The first argument is an array of (base64-encoded) strings,
+                   representing the items to be added.
+                 * The second argument specifies the position in the queue where the items
+                   will be inserted.
+                 * When adding local filenames to the queue, only absolute pathnames should
+                   be used.  Using relative pathnames would be foolish because the server
+                   has no idea what the client's current working directory is.
+               Return value: Nothing meaningful.
+        
+    boolean "is_looping" ()
+           Tells you whether loop mode is on or not.
+    
+               If loop mode is on, songs are returned to the end of the song queue after
+               they finish playing.  If loop mode is off, songs that have finished playing
+               are not returned to the queue.
+    
+               Arguments: None.
+               Return value: True if loop mode is set, False if it is not.
+        
+    boolean "is_paused" ()
+           Tells you whether the current song is paused or not.
+    
+               Arguments: None.
+               Return value: True if the current song is paused, otherwise False.
+        
+    boolean "is_queue_running" ()
+           Tells you whether the queue consumption (advancement) is activated.
+    
+               Arguments: None.
+               Return value: True if new songs are going to be played from the queue after
+                   the current song is finished, otherwise False.
+        
+    double "last_queue_update" ()
+           Returns the time at which the song queue was last modified.
+    
+               This method is intended for use by GUI clients that don't want to waste time
+               downloading the entire contents of the song queue if it hasn't changed.
+       
+               Arguments: None.
+               Return value: A floating-point number that represents time as the number of
+                   seconds since the epoch.
+        
+    int "length" ()
+           Returns the number of items in the song queue.
+    
+               Arguments: None.
+               Return value: The number of items in the song queue.
+        
+    array "list" ()
+    array "list" (array)
+           Lists the song queue's contents. If a range is specified, only the
+               items that fall within that range are listed.
+    
+               Arguments: Either none, or an array of integers that represents a range.
+                 * If no range is given, the whole list is returned.
+                 * If the range contains a single integer, it will represent all members
+                   of the queue whose index is greater than or equal to the value of the
+                   integer.
+                 * If the range contains two integers, it will represent all members of
+                   the queue whose index is greater than or equal to the value of the
+                   first integer and less than the value of the second integer.
+                 * If the range contains more than two integers, an error will occur.
+               Return value: An array of (base64-encoded) strings, representing the
+                   selected range from the song queue's contents.
+        
+    boolean "move" (array, int)
+           Moves a range of items to a new position within the queue.
+    
+               Arguments: The first argument is an array of integers that represents a
+                   range of items to be moved. 
+                 * If the range contains a single integer, it will represent all members
+                   of the queue whose index is greater than or equal to the value of the
+                   integer.
+                 * If the range contains two integers, it will represent all members of
+                   the queue whose index is greater than or equal to the value of the
+                   first integer and less than the value of the second integer.
+                 * If the range contains more than two integers, an error will occur.
+                 * The second argument, "destination", specifies the position in the queue
+                   where the items will be moved.
+               Return value: Nothing meaningful.
+        
+    boolean "move_list" (array, int)
+           Moves the items referenced by a list of positions to a new position.
+       
+               Arguments: The first argument is an array of integers that represents a
+                   list of the positions of the items to be moved. 
+                 * The second argument, "destination", specifies the position in the queue
+                   where the items will be moved.
+               Return value: Nothing meaningful.
+        
+    boolean "next" ()
+    boolean "next" (int)
+           Stops the current song (if any), and jumps ahead to a song that is
+               currently in the queue. The skipped songs are recorded in the history as if
+               they had been played. When called without arguments, this behaves very
+               much like the skip() method, except that it will have an effect even if
+               nothing is currently playing.
+    
+               Arguments: A single integer that tells how far forward into the song queue
+                   to advance. A value of 1 will cause the first song in the queue to play,
+                   2 will cause the second song in the queue to play, and so on. If no
+                   argument is given, a value of 1 is assumed.
+               Return value: Nothing meaningful.
+        
+    boolean "no_op" ()
+           Does nothing, successfully.
+    
+               Arguments: None.
+               Return value: Nothing meaningful.
+        
+    boolean "pause" ()
+           Pauses the currently playing song.
+    
+               Arguments: None.
+               Return value: Nothing meaningful.
+        
+    boolean "prepend" (array)
+           Adds items to the beginning of the queue.
+    
+               Argument: An array of (base64-encoded) strings, representing the items to be
+                   added.
+                 * When adding local filenames to the queue, only absolute pathnames should
+                   be used.  Using relative pathnames would be foolish because the server
+                   has no idea what the client's current working directory is.
+               Return value: Nothing meaningful.
+        
+    boolean "previous" ()
+    boolean "previous" (int)
+           Stops the current song (if any), removes the most recently played song
+               from the history, and puts these songs at the head of the queue. When loop
+               mode is on, the songs at the tail of the song queue are used instead of the
+               most recently played songs in the history.
+    
+               Arguments: A single integer that tells how far back in the history list to
+                   retreat. A value of 1 will cause the most recent song to play, 2 will
+                   cause the second most recent song to play, and so on. If no argument is
+                   given, a value of 1 is assumed.
+               Return value: Nothing meaningful.
+        
+    boolean "putback" ()
+           Places the currently playing song at the beginning of the queue.
+    
+               Arguments: None.
+               Return value: Nothing meaningful.
+        
+    int "queue_length" ()
+           Returns the number of items in the song queue.
+    
+               Arguments: None.
+               Return value: The number of items in the song queue.
+        
+    boolean "reconfigure" ()
+           Tells the server to reread its player configuration file.
+    
+               Arguments: None.
+               Return value: Nothing meaningful.
+        
+    boolean "remove" (base64)
+    boolean "remove" (base64, array)
+           Removes all items that match the given regular expression.
+    
+               Arguments: A regular expression that specifies which items to remove.
+                 * Optionally, an array of integers may be given as a second argument.
+                   This argument represents a range to which the removal will be limited.
+                 * If the range contains a single integer, it will represent all members
+                   of the queue whose index is greater than or equal to the value of the
+                   integer.
+                 * If the range contains two integers, it will represent all members of
+                   the queue whose index is greater than or equal to the value of the
+                   first integer and less than the value of the second integer.
+                 * If the range contains more than two integers, an error will occur.
+               Return value: Nothing meaningful.
+        
+    boolean "replace" (array)
+           Replaces the contents of the queue with the given items.
+    
+               This is equivalent to calling clear() and prepend() in succession, except that this
+               operation is atomic.
+    
+               Argument: An array of (base64-encoded) strings, representing the items to be
+                   added.
+                 * When adding local filenames to the queue, only absolute pathnames
+                   should be used.  Using relative pathnames would be foolish because
+                   the server isn't aware of the client's current working directory.
+               Return value: Nothing meaningful.
+        
+    boolean "reverse" ()
+    boolean "reverse" (array)
+           Reverses the order of the items in the queue.
+    
+               Arguments: Either none, or an array of integers that represents a range.
+                 * If no range is given, the whole list is affected.
+                 * If the range contains a single integer, it will represent all members
+                   of the queue whose index is greater than or equal to the value of the
+                   integer.
+                 * If the range contains two integers, it will represent all members of
+                   the queue whose index is greater than or equal to the value of the
+                   first integer and less than the value of the second integer.
+                 * If the range contains more than two integers, an error will occur.
+               Return value: Nothing meaningful.
+        
+    boolean "run_queue" ()
+           Allows new songs to be played again after halt_queue() has been called.
+    
+               Arguments: None.
+               Return value: Nothing meaningful.
+        
+    boolean "runqueue" ()
+           Allows new songs to be played again after halt_queue() has been called.
+    
+               Arguments: None.
+               Return value: Nothing meaningful.
+        
+    boolean "set_history_limit" (int)
+           Sets the limit on the size of the history list stored in memory.
+    
+               This will irrevocably discard history entries if the new limit is lower than
+               the current size of the history list.
+    
+               Arguments: The new maximum number of history entries. If this value is
+                   negative, the history limit will be set to zero.
+               Return value: Nothing meaningful.
+        
+    boolean "set_loop_mode" (boolean)
+           Turns loop mode on or off.
+    
+               If loop mode is on, songs are returned to the end of the song queue after
+               they finish playing.  If loop mode is off, songs that have finished playing
+               are not returned to the queue.
+    
+               Arguments: True if you want to turn loop mode on, False if you want to turn
+                   it off.
+               Return value: Nothing meaningful.
+        
+    base64 "showconfig" ()
+           Returns a textual description of the server's player configuration.
+    
+               Arguments: None.
+               Return value: A (base64-encoded) string that shows which programs will be
+                   used to play the various file-types recognized by the Moosic server.
+        
+    boolean "shuffle" ()
+    boolean "shuffle" (array)
+           Rearrange the contents of the queue into a random order.
+    
+               Arguments: Either none, or an array of integers that represents a range.
+                 * If no range is given, the whole list is affected.
+                 * If the range contains a single integer, it will represent all members
+                   of the queue whose index is greater than or equal to the value of the
+                   integer.
+                 * If the range contains two integers, it will represent all members of
+                   the queue whose index is greater than or equal to the value of the
+                   first integer and less than the value of the second integer.
+                 * If the range contains more than two integers, an error will occur.
+               Return value: Nothing meaningful.
+        
+    boolean "skip" ()
+           Skips the rest of the current song to play the next song in the queue.
+               This only has an effect if there actually is a current song.
+    
+               Arguments: None.
+               Return value: Nothing meaningful.
+        
+    boolean "sort" ()
+    boolean "sort" (array)
+           Arranges the contents of the queue into sorted order.
+    
+               Arguments: Either none, or an array of integers that represents a range.
+                 * If no range is given, the whole list is affected.
+                 * If the range contains a single integer, it will represent all members
+                   of the queue whose index is greater than or equal to the value of the
+                   integer.
+                 * If the range contains two integers, it will represent all members of
+                   the queue whose index is greater than or equal to the value of the
+                   first integer and less than the value of the second integer.
+                 * If the range contains more than two integers, an error will occur.
+               Return value: Nothing meaningful.
+        
+    boolean "stop" ()
+           Stops playing the current song and stops new songs from playing. The
+               current song is returned to the head of the song queue and is not recorded
+               in the history list. If loop mode is on, the current song won't be placed at
+               the end of the song queue when it is stopped.
+    
+               Arguments: None.
+               Return value: Nothing meaningful.
+        
+    boolean "sub" (base64, base64)
+    boolean "sub" (base64, base64, array)
+           Performs a regular expression substitution on the items in the queue.
+       
+               Arguments: The first is a (base64-encoded) regular expression that specifies
+                   the text to be replaced.
+                 * The second argument is the (base64-encoded) string that will be used to
+                   replace the first occurrence of the regular expression within each queue
+                   item. Any backslash escapes in this string will be processed, including
+                   special character translation (e.g. "\n" to newline) and backreferences
+                   to groups within the match.
+                 * Optionally, an array of integers may be given as a third argument.
+                   This argument represents a range to which the substitution will be
+                   limited. This range is interpreted in the same way as the range argument
+                   in other Moosic methods.
+                 * If performing a replacement changes an item in the queue into the empty
+                   string, then it is removed from the queue.
+               Return value: Nothing meaningful.
+        
+    boolean "sub_all" (base64, base64)
+    boolean "sub_all" (base64, base64, array)
+           Performs a global regular expression substitution on the items in the queue.
+       
+               Arguments: The first is a (base64-encoded) regular expression that specifies
+                   the text to be replaced.
+                 * The second argument is the (base64-encoded) string that will be used to
+                   replace all occurrences of the regular expression within each queue
+                   item. Any backslash escapes in this string will be processed, including
+                   special character translation (e.g. "\n" to newline) and backreferences
+                   to the substrings matched by individual groups in the pattern.
+                 * Optionally, an array of integers may be given as a third argument.
+                   This argument represents a range to which the substitution will be
+                   limited. This range is interpreted in the same way as the range argument
+                   in other Moosic methods.
+                 * If performing a replacement changes an item in the queue into the empty
+                   string, then it is removed from the queue.
+               Return value: Nothing meaningful.
+        
+    array "system.listMethods" ()
+           Return an array of all available XML-RPC methods on this server.
+            
+    string "system.methodHelp" (string)
+           Given the name of a method, return a help string.
+            
+    array "system.methodSignature" (string)
+           Given the name of a method, return an array of legal signatures. Each
+                   signature is an array of strings. The first item of each signature is
+                   the return type, and any others items are parameter types.
+            
+    array "system.multicall" (array)
+           Process an array of calls, and return an array of results. Calls
+                   should be structs of the form {'methodName': string, 'params': array}.
+                   Each result will either be a single-item array containg the result
+                   value, or a struct of the form {'faultCode': int, 'faultString':
+                   string}. This is useful when you need to make lots of small calls
+                   without lots of round trips.
+            
+    boolean "toggle_loop_mode" ()
+           Turns loop mode on if it is off, and turns it off if it is on.
+    
+               If loop mode is on, songs are returned to the end of the song queue after
+               they finish playing.  If loop mode is off, songs that have finished playing
+               are not returned to the queue.
+    
+               Arguments: None.
+               Return value: Nothing meaningful.
+        
+    boolean "toggle_pause" ()
+           Pauses the current song if it is playing, and unpauses if it is paused.
+    
+               Arguments: None.
+               Return value: Nothing meaningful.
+        
+    boolean "unpause" ()
+           Unpauses the current song.
+    
+               Arguments: None.
+               Return value: Nothing meaningful.
+        
+    string "version" ()
+           Returns the Moosic server's version string.
+    
+               Arguments: None.
+               Return value: The version string for the Moosic server.
+        
+Section 4: Writing a Moosic Client in Python
+
+    As demonstrated in section 0, communicating with a Moosic server is very
+    easy to do with Python. In this section, I'll merely elaborate on the
+    details that were omitted from section 0 for the sake of brevity.
+
+    First of all, you should know that LocalMoosicProxy() can be called with
+    a filename argument to specify the location of the Moosic server's
+    socket file. This is useful if moosicd was started with the "-c" option.
+    Refer to the moosic_factory.py module's documentation
+    (moosic_factory.html).
+
+    Next, note that many of the Moosic server's methods accept or return
+    special types of objects from the xmlrpclib module, namely Boolean and
+    Binary. These object types serve the purpose of bridging the small
+    mismatch between the data-types supported by XML-RPC and Python's
+    intrinsic data-types. Boolean objects present no unusual problem, since
+    they evaluate to a correct truth value without any extra effort.
+    However, you must take care when using the Moosic methods that accept or
+    return Binary objects. Read the documentation for the xmlrpclib module
+    for details on how to work with these objects. The basic technique boils
+    down to wrapping up a string inside a Binary object before sending it to
+    the server, and using the "data" attribute to access the string data
+    within the Binary objects returned by the server. Regular strings can't
+    be used because XML-RPC's normal string data-type can't handle multiple
+    8-bit strings within a single request if the strings use different
+    encodings.
+
+Section 5: Writing a Moosic Client in Another Language
+
+    If you are not using Python to write your Moosic client, the first issue
+    to deal with is deciding upon an XML-RPC implementation. For most
+    popular programming languages, there are multiple XML-RPC
+    implementations available. Most of the possibilities are listed at
+    <http://www.xmlrpc.com/directory/1568/implementations>. Since XML-RPC is
+    an open specification, you can create your own implementation if you
+    don't like any of the ones that already exist.
+
+    Once you've got an XML-RPC library that you like, the big hurdle to
+    overcome is to make that library send its RPC calls over a Unix socket
+    instead of an IP socket. I was able to do this pretty easily with
+    Python's xmlrpclib since it is designed to allow pluggable transport
+    methods: all I had to do was subclass my own Transport type and plug it
+    back into the original library's classes. (If your language and/or
+    library of choice makes this task difficult, then you may begin to
+    understand why some Python programmers are so smug.)
+
+    After you are capable of sending XML-RPC requests through a Unix socket,
+    you can go ahead and start sending requests to a Moosic server. Refer to
+    the end of section 2 for information on how to address a Moosic server.
+    Refer to section 3 for a list of valid server requests.
+
+    If you can't be bothered to find or hack together an XML-RPC library
+    that works with Unix sockets, then you can still talk to a Moosic server
+    that is listening on an IP socket, but this is less than ideal since
+    listening on an IP socket is not default behavior for most Moosic
+    servers.
+
+Section 6: API Version History (ChangeLog)
+
+    * 1.7
+        First implemented by moosicd 1.5.0. The following methods were
+        added:
+
+            skip, current_time
+
+        The following methods had their behavior significantly changed:
+
+            previous, next
+
+        Specifically, the previous() method no longer activates queue
+        advancement if it had been disabled before. This means that calling
+        previous() no longer necessarily causes a song to start playing. The
+        next() method was changed to more closely parallel the behavior of
+        previous(): it takes a single optional integer argument to allow
+        immediate advancement by more than one song at a time, and it has an
+        effect even when no song is currently playing. The new skip() method
+        implements the exact same behavior that was previously exhibited by
+        next().
+
+        Last, and most importantly, the name of the default socket file for
+        communicating with the server via unix sockets was changed from
+        $CONFIG_DIR/socket-$HOSTNAME to $CONFIG_DIR/socket. If you are a
+        Python programmer and you use the updated moosic_factory.py file
+        from Moosic version 1.5.0, then you don't have to make any changes.
+        Otherwise, you must change your client's code to connect to the file
+        named "socket" instead of the file named
+        "socket-something.example.com". If your client only talks to the
+        Moosic server through TCP/IP, then you don't have to make any
+        changes, of course.
+
+    * 1.6
+        First implemented by moosicd 1.4.10. The following methods were
+        added:
+
+            getconfig
+
+    * 1.5
+        First implemented by moosicd 1.4.6. The following methods were
+        added:
+
+            sub, sub_all, stop
+
+    * 1.4
+        First implemented by moosicd 1.4.5. The following methods were
+        added:
+
+            previous
+
+    * 1.3
+        First implemented by moosicd 1.4.4. The following methods were
+        added:
+
+            replace, replace_range, last_queue_update
+
+    * 1.2
+        First implemented by moosicd 1.4.2. The following methods were
+        added:
+
+            cut_list, crop_list
+
+    * 1.1
+        First implemented by moosicd 1.4.1. The following methods were
+        added:
+
+            is_looping, set_loop_mode, toggle_loop_mode
+
+    * 1.0
+        First implemented by moosicd 1.4.0. The following methods were
+        included:
+
+            api_version, append, clear, crop, current, cut, die, filter,
+            get_history_limit, halt_queue, haltqueue, history, indexed_list, insert,
+            is_paused, is_queue_running, length, list, move, move_list, next, no_op,
+            pause, prepend, putback, queue_length, reconfigure, remove, reverse,
+            run_queue, runqueue, set_history_limit, showconfig, shuffle, sort,
+            system.listMethods, system.methodHelp, system.methodSignature,
+            system.multicall, toggle_pause, unpause, version
+

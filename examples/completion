@@ -1,0 +1,55 @@
+# moosic(1) completion
+# 
+# Copyright 2003 "Etienne PIERRE" <etienne@tuxfamily.org>
+# Copyright 2004 "Daniel Pearson" <daniel@nanoo.org>
+#
+have moosic &&
+_moosic()
+{
+	local cur options paroptions
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+	prev=${COMP_WORDS[COMP_CWORD-1]}
+	
+        options='-d --shuffle-dir -a --shuffle-args -g --shuffle-global -o \
+                --inorder -s --sort -i --ignore-case -r --no-recurse -n \
+                --non-file-args -f --auto-find -F --auto-grep -m --music-dir \
+                -c --config-dir -t --tcp -N --no-startserver -S --showcommands \
+                -h --help -v --version'
+        commands=' \
+    add            adv            advance        append         clear \
+    crop           curr           current        currenttime    cut \
+    del            die            exit           filter         gobackto \
+    goto           help           hist           history        insert \
+    intervaladd    isadvancing    islooping      ispaused       len \
+    length         list           loop           mixin          move \
+    next           noadv          noadvance      noloop         partialsort \
+    pause          pladd          plainlist      plappend       play \
+    plinsert       plmixin        plprepend      plreplace      pre \
+    prepend        prev           previous       putback        quit \
+    reconfig       reconfigure    remove         replace        reshuffle \
+    reverse        showconfig     shuffle        sort           stagger \
+    staggeradd     staggermerge   startserver    state          status \
+    stop           sub            suball         swap           toggleadvance \
+    toggleloop     togglepause    unpause        version        wipe'
+	paroptions="$options $commands"
+	
+	if [ ${COMP_CWORD} -eq 1 ]; then
+	    COMPREPLY=($( compgen -W "$paroptions" | grep ^$cur ))
+	else
+	    case "$prev" in
+		-*)
+		    COMPREPLY=($( compgen -W "$paroptions" | grep ^$cur ))
+		;;
+		*)
+		    _filedir
+		;;
+	    esac
+	fi
+
+	return 0
+
+}
+[ "$have" ] && complete -F _moosic -o filenames moosic
+

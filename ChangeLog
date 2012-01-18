@@ -1,0 +1,1313 @@
+Sun 06 Nov 2011
+  - Copyright is unethical, so I have relinquished my intellectual monopoly
+    over Moosic.
+
+Sat 05 Nov 2011
+  - The implementation of call_find in client/cli/dispatcher.py that uses
+    subprocess.Popen does not need the directory name to be escaped for the
+    shell, so sh_escape is only used for the old implementation.
+
+Wed 14 Sep 2011
+  - The change to moosic.client.factory.UnixStreamTransport in the last
+    version fixed compatibility for Python 2.7, but broke it for Python 2.6.
+    So the Python version is now detected and the appropriate httplib class
+    instance is chosen accordingly.
+  - moosic.client.cli.dispatcher.wipe() now sends a stop() message to the
+    server instead of skip() since stop() behaves better with loop mode.
+  - The "goto" and "gobackto" commands of the CLI client now respect the
+    --ignore-case option.
+
+Thu 21 Jul 2011
+  - Version 1.5.5: Keeping up with API changes.
+
+Tue 19 Jul 2011
+  - moosic.server.main no longer imports SocketServer, since it's not actually
+    used there nowadays.
+  - Two bitrot bugs were fixed, one each in the client and the server.
+  - The client bug was caused by using the now-deprecated httplib.HTTP class
+    in UnixStreamTransport. HTTPConnection is now used directly instead.
+  - The server bug was caused by SimpleXMLRPCServer.SimpleXMLRPCRequestHandler
+    setting a variable called "disable_nagle_algorithm", which made
+    SocketServer set socket options that are only valid for TCP sockets.
+
+Wed 20 May 2009
+  - The subprocess module is now used instead of os.popen, as the latter is
+    deprecated as of Python 2.6.  os.popen is still used as a backup if the
+    subprocess module doesn't exist.
+  - The popen2 module is no longer imported. It seems that it hadn't actually
+    been used since some very old and long-lost version, if ever.
+
+Fri 13 Jul 2007
+  - Version 1.5.4: violation of OO principles finally bit me in the butt.
+
+Thu 12 Jul 2007
+  - The call to os.getpid() in the "quit()" signal handler function in
+    moosic/server/main.py was corrected.  The parentheses were missing,
+    meaning that this wasn't actually a function call, but a reference to the
+    function object itself, which really isn't what I meant.
+  - The constructor for UnixMoosicServer and TcpMoosicServer in
+    moosic/server/support.py now extends the constructor from
+    SimpleXMLRPCServer instead of overriding it and duplicating its code.
+    This prevents breakage should the internal structure of SimpleXMLRPCServer
+    should ever change (as it did between Python 2.4 and Python 2.5).  The
+    incompatibility with Python 2.5 was brought to my attention by Jim Russell
+    <jim@jimr.us> and its symptoms are detailed at
+    https://bugs.launchpad.net/ubuntu/+source/moosic/+bug/95532.
+
+Fri 25 May 2007
+  - The -C option was added to the command-line client.
+  - Version 1.5.3: You can still teach an old cow new tricks.
+
+Wed 17 May 2006
+  - The "move-pattern" moosic command was added.
+
+Tue 16 Aug 2005
+  - Version 1.5.2: Better late than never.
+
+Wed 01 Jun 2005
+  - A colon is no longer allowed as a bracketing character for a range string in
+    utilities.parse_range().
+  - utilities.parse_range() now explicitly checks for an empty string as input
+    and rejects such.
+
+Thu 19 May 2005
+  - utilities.parse_range() now (correctly) ignores bracketing characters at
+    the start and end of an input range string to provide an easy alternative
+    for preventing negative numbers from being interpreted as options.
+    Similarly, the "insert", "pl-insert", and "move" commands also ignore
+    bracketing characters around their index arguments.
+  - The VERSION variable was moved from two separate instances in
+    moosic/client/cli/__init__.py and moosic/server/__init__.py to a single
+    instance in moosic/__init__.py.
+
+Wed 27 Apr 2005
+  - The "stagger" command of the command-line moosic client was fixed to adapt
+    to the fact that staggered_merge() now returns a list instead of a tuple.
+
+Thu 14 Apr 2005
+  - A bug in the "unplayable filter" feature of the CLI client that duplicated
+    items that matched more than one entry in the song handler configuration
+    was fixed.
+
+Wed 06 Apr 2005
+  - The exception handling for loading the state file was tightened up, so
+    uncaught exceptions should no longer occur there.
+
+Sun 27 Mar 2005
+  - staggered_merge() was rewritten for the pure fun of it.  Now it's shorter,
+    much easier to understand, and recursive.  Lispy variable names are used in
+    a tepid attempt to compensate for the lack of multitudinous parentheses.
+
+Sun 10 Oct 2004
+  - A patch from Nate Straz was applied to keep the server from saving state to
+    disk if the state hasn't really changed.
+
+Fri 08 Oct 2004
+  - An off-by-one error in moosic.utilities.is_overlapping() was debugged. This
+    mistake caused a false positive when the first number in one range was the
+    same as the second number in the other range or vice versa.
+
+Fri 24 Sep 2004
+  - I've removed "greplist".  It was silly.
+
+Tue 31 Aug 2004
+  - The "greplist" client command was added.  I don't know if I'll keep it,
+    since it's nearly as easy to type "moosic list | grep foo".
+
+Thu 19 Aug 2004
+  - API_MINOR_VERSION in moosic/server/methods.py should have been updated to 8
+    in the last version, but I must have forgotten.  This has been fixed.
+    Thanks to Florian Ragwitz for spotting this.
+
+Tue 20 Jul 2004
+  - moosic.server.main.play() now handles exceptions raised by its call to
+    os.execvp(), thus fixing a terrible oversight that could cause the server
+    to crash.
+  - The server now logs the total playing time whenever it finishes playing a
+    song.
+
+Mon 19 Jul 2004
+  - The is_overlapping() function was moved from moosic.server.methods to
+    moosic.utilities.
+
+Fri 25 Jun 2004
+  - Version 1.5.1: Welcome to the wonderful world of distutils.
+
+Thu 24 Jun 2004
+  - The "swap" server method was completed.
+
+Thu 29 Apr 2004
+  - The "swap" command was implemented in the CLI client. (Todo: 
+    implement/document in server.)
+
+Tue 20 Apr 2004
+  - The "toggle-advance" command was added.
+  - The moosic man page was updated to mention Audio CD support, and to
+    document the new commands.
+  - moosic_hackers.txt was updated to match the new code organization.
+
+Sun 18 Apr 2004
+  - The "interval-insert" command was implemented, and was renamed to
+    "interval-add".
+  - README.txt was updated to reflect the new installation process.
+
+Sat 17 Apr 2004
+  - The "replace" and "pl-replace" commands were added.
+  - A stub for the "interval-insert" command was added, and needs to be
+    implemented.
+
+Fri 02 Apr 2004
+  - The routine for reading playlist files now supports playlists that use
+    relative pathnames.  This support was inspired code submitted by michael d.
+    ivey <ivey@gweezlebur.com>.
+
+Thu 01 Apr 2004
+  - moosic.server.daemonize.daemonize() now uses os._exit() after its second
+    call to fork() so that when moosic.server.main.main() is invoked by another
+    python program to start the server (like the moosic client), only a single
+    SystemExit exception will be raised.
+  - By default, the moosic client now filters out songs that the server doesn't
+    know how to play before adding anything to the song queue.  This behavior
+    can be turned off with the -U/--allow-unplayable option.
+  - A very heavily commented example configuration file is now distributed with
+    the documentation.
+
+Wed 31 Mar 2004
+  - The server's logger was tweaked a bit.  It no longer writes to stderr when
+    an error is logged, because moosicd normally doesn't have a useful stderr
+    associated with it.  Also, the "message" parameter is used as the return
+    value of a logging call to make it easier to reuse the log message.
+
+Tue 30 Mar 2004
+  - An effort was made to change the idiom of printing to stderr and then
+    calling sys.exit(1) into an idiom of passing the error message directly to
+    sys.exit().  This is not so important for the command-line client, but
+    it's important for moosicd to behave this way so that startup failures can
+    be easily caught by an invoking program.
+
+Mon 29 Mar 2004
+  - The modules that comprise the project were reorganized into packages.
+  - The old Makefile-based build and install system was replaced with a
+    standard, distutils-based setup.py script.
+  - A Makefile is still used to translate the documentation from POD source
+    format into various target formats.
+  - The "moosic" client now uses a different method for automatically starting
+    up the server.  This new method doesn't use the $MOOSICD environment
+    variable.
+
+Sun 28 Mar 2004
+  - daemonize.py was changed so that it doesn't reset the umask unless
+    specifically requested.
+  - The debian/ directory was removed, which means that support for building
+    a .deb from the upstream source was removed.  I've decided that it's too
+    much trouble for me to stay synchronized with the official Debian package.
+  - The experimental/ directory was removed because I'm not interested in
+    developing the code within any further.
+  - Version 1.5.0: Several incompatible changes.  Best to get it over with all
+    at once.
+
+Wed 24 Mar 2004
+  - README.developers now completely documents how to add moosic commands and
+    moosicd methods.
+
+Tue 23 Mar 2004
+  - A lot of text was written for README.developers to describe how to add
+    moosic commands and moosicd methods.  It's still not quite yet finished,
+    though.
+
+Mon 22 Mar 2004
+  - Various documentation files were updated in preparation for a new release.
+
+Wed 10 Mar 2004
+  - The repeated state-saving revealed a bug in data.getstate() which caused
+    data.song_queue to be modified.  getstate() was changed to make no
+    modifications to any of data's attributes.
+
+Tue 09 Mar 2004
+  - The behavior of the previous() method was changed so that it doesn't
+    activate queue advancement if it had been previously disabled.
+  - The next() method was renamed to skip(), and was replaced with a next()
+    method that is more parallel to the previous() method.
+  - The poorly named "noplay" command was replaced with the "noadvance" and
+    "advance" commands ("noadv" and "adv" for short).
+  - The "sleep" and "wake" command aliases were removed from the command-line
+    client.  Too many aliases is just silly and confusing.
+  - The "next" command now takes an argument that lets you skip ahead by more
+    than one song.  It also now has an effect when there's no current song.
+  - The hostname is no longer appended to the names of the files stored in
+    ~/.moosic/.  (The only reason this was done in the first place was to
+    handle the case where the user's home directory was on an NFS share and
+    the user wanted to run a moosicd on different machines that were accessing
+    the same home directory.  This situation can now be handled more simply
+    and appropriately by using the -c option, and I don't share /home anymore
+    anyway.)  Client developers will need to update their code, and users who
+    want to use their old config and log files will have to rename them to
+    remove the "-$HOSTNAME" part.  
+  - The os.kill() invocations in moosicd_methods.py have been put into
+    try-catch blocks so that any problems they cause can be more easily
+    traced.
+  - The os.kill() invocation in the unpause() server method no longer raises
+    an exception if the player process is dead already.
+  - The "stop_hack" server attribute was renamed to "ignore_song_finish".
+  - Songs that have no handler in the server's config are no longer placed in
+    the history list, nor are they returned to the queue when loop mode is on.
+  - The server's state is saved at regular time intervals rather than only
+    saving when the server exits cleanly.  This will make recovery from
+    crashes of all sorts much more convenient.
+
+Fri 28 Nov 2003
+  - An effort has been started to keep instances of the empty string ('') out
+    of the song queue, by filtering them out in the server methods that add or
+    change queue members.
+
+Thu 27 Nov 2003
+  - A first implementation of the current_time() server method was completed,
+    but not yet tested.
+
+Mon 17 Nov 2003
+  - The previous() server method now avoids trying to pop from an empty
+    history list.
+
+Sun 16 Nov 2003
+  - A "help" command was added to moosic to allow a user to explore its
+    commands in small, chewable chunks instead of the giant mouthful that is
+    the output of --showcommands.
+  - The behavior of the previous() moosicd method was corrected for the case
+    when the server is in loop mode.  When loop mode is on, the most recently
+    played song is now taken from the end of the song queue instead of the end
+    of the history list.
+
+Fri 14 Nov 2003
+  - The installation process was modified so that Python modules which would
+    be of interest to a prospective Moosic hacker (i.e. the ones listed in the
+    PUBLIC_MODULES makefile variable) are placed in the installation's
+    documentation directory.  This is in response to Debian Bug #196652.
+
+Thu 30 Oct 2003
+  - Version 1.4.10: Minor features and bugfixes.
+
+Wed 29 Oct 2003
+  - Typographical errors in the internal documentation for the "ispaused",
+    "islooping", and "isadvancing" moosic commands were corrected.
+  - I've tested it, and using TakCD as a handler for Moosic works.  I just
+    need to properly document this fact, and I'll be able to say that Moosic
+    officially supports audio CD tracks.
+
+Tue 28 Oct 2003
+  - The --tcp-also option was added to moosicd, making it possible to listen
+    on both a Unix socket and a TCP socket at the same time.
+
+Mon 27 Oct 2003
+  - The toggle_pause() server method now calls pause() or unpause() instead of
+    duplicating the code in those functions.
+  - The pause() server method now sends a STOP signal (a tenth of a second)
+    after the TSTP, in case the song player doesn't respond to TSTP
+    appropriately.
+
+Mon 20 Oct 2003
+  - moosicd now uses the TSTP signal instead of the STOP signal to pause
+    song-player helpers.  This is preparation for adding support for playing
+    audio-CD tracks with TakCD.
+
+Fri 17 Oct 2003
+  - The startServer() function in moosic_factory.py now searches for a program
+    named "MoosicDaemon" if a program named "moosicd" can't be found.  This
+    lets startServer() work even if I decide to rename the server program so
+    that it doesn't interfere when I use my shell's tab-completion to use
+    "moosic".
+  - The getconfig() server method was added.
+
+Thu 16 Oct 2003
+  - A threading problem which occurred on *BSD (and possibly other) systems
+    was worked around.  On these platforms, moosicd's threads ran sequentially
+    instead of in parallel, making moosicd almost useless.  This is caused by
+    the policy of the thread scheduler on these systems of not starting a new
+    thread until the previous thread performs a blocking operation.  So the
+    work-around consists of inserting extremely brief calls to sleep() at key
+    points when starting a new thread.  (Bug reported and solved by Paul
+    Barnfather <plb@clanger9.org>).
+
+Mon 13 Oct 2003
+  - Symlinks are now followed when scanning the music directory with
+    "--auto-grep" or "--auto-find".
+
+Wed 08 Oct 2003
+  - Exceptions that occur when setting the locale in moosic are now ignored.
+    This was done to let moosic work with the Python runtime included with Mac
+    OS X, which throws an exception complaining that locale setting is not
+    supported.
+
+Tue 07 Oct 2003
+  - A type error (attempting to concatenate a list to a tuple) in the recently
+    modified "stagger" moosic command was fixed.
+
+Thu 02 Oct 2003
+  - The documentation for the moosicd methods was tweaked a bit.
+  - The startServer() function in moosic_factory now uses a default path when
+    the PATH environment variable isn't set.
+
+Tue 30 Sep 2003
+  - Since version 1.4, the return type for the "showconfig" server method has
+    been advertised as "string", when it has really been returning "base64"
+    data all this time.  The correct return type is now registered and
+    properly mentioned in the relevant documentation.
+  - The behavior of the "stagger" moosic command was changed. It now puts any
+    leftover songs (i.e. songs which didn't match any regex named on the
+    command line) all together at the end of the queue, instead of including
+    the leftovers within the staggered arrangement.  The old behavior can be
+    duplicated by adding a regex that matches anything (e.g.  ".") as the last
+    argument to the command. (Incompatible change.  But I really doubt anyone
+    will care enough to complain.)
+
+Fri 26 Sep 2003
+  - The "ispaused", "islooping", and "isadvancing" moosic commands were added.
+
+Tue 16 Sep 2003
+  - Some of the differences between my debian/ directory and the one in the
+    official package were merged.
+  - Version 1.4.7: Daemon auto-start and song auto-find.
+  - Bah! Using the "in" operator to find a substring doesn't work in Python
+    2.2.x, so --auto-find fails (with an ugly crash) for Python 2.2.x users.
+  - Version 1.4.8: Brown-paper-bag bug.
+  - Augh! The "moosicd" target in the Makefile was missing an essential
+    module, so the resulting executable couldn't run. I'm feeling very stupid
+    because I really should have caught this, and I would have if I'd done
+    proper testing.
+  - A search string used with --auto-find no longer matches everything if the
+    search string evaluates to the empty string after being simplified.
+  - Version 1.4.9: Somebody just smack me with a stick.
+
+Mon 15 Sep 2003
+  - The command argument given to moosic now disregards non-alphanumeric
+    characters, and the private unmangle() function in moosic_dispatcher.py
+    was updated accordingly.
+
+Fri 12 Sep 2003
+  - The implementation of --auto-find was cleaned up and now respects
+    directory seperators (i.e. slashes).
+  - The "--no-recurse" option was documented in the manpage. (Oops, how long
+    was that missing?)
+
+Tue 09 Sep 2003
+  - The "auto-grep" feature was added to moosic.
+  - The --sort option to moosic has been properly distinguished from
+    --inorder, both in the code and in the documentation.
+  - The --ignore-case, --music-dir, --auto-find, and --auto-grep options were
+    documented in the moosic manpage.
+  - utilities.grep() and utilities.antigrep() now accept either a string or a
+    compiled regexp as their first argument, and their implementations were
+    very slightly optimized for speed.
+  - The flatten() function and its helpers were added to utilities.py.
+  - Valiant (but possibly vain) attempts were made to make
+    utilities.staggered_merge() easier to understand.
+
+Mon 08 Sep 2003
+  - The functionality of the "ma" script was integrated into moosic with the
+    addition of the "--auto-find" option (and its companion, "--music-dir").
+    These new options still need to be documented in the manpage.
+  - The "--ignore-case" option was added to moosic, and needs to be documented
+    in the manpage.
+
+Sun 07 Sep 2003
+  - The uniq() and sh_escape() functions were added to utilities.py.
+
+Sat 06 Sep 2003
+  - The "ma" script was contributed by David McCabe, and several enhancements
+    were made to it.
+
+Mon 01 Sep 2003
+  - The --no-startserver option was added to moosic.
+  - The moosic docs were updated to reflect the fact that it will now
+    automatically start moosicd as needed.
+
+Sun 31 Aug 2003
+  - The startServer() function was documented and moved to moosic_factory.py.
+  - debian/completion was updated, since I noticed that it was terribly out of
+    date.
+
+Fri 29 Aug 2003
+  - moosicd now daemonizes itself with a handy daemonize function shamelessly
+    nabbed from Noah Spurrier (http://www.noah.org/python/).
+  - moosic now tries to start moosicd automatically if it can't contact a
+    Moosic server at the address at which it expects to find one.  This is
+    meant to relieve users of the burden of having to start moosicd by hand.
+
+Thu 28 Aug 2003
+  - squeezeTool was modified to allow its generated executables to use a
+    specific python version in the shebang line.  The Makefile was modified to
+    take advantage of this new option.
+  - The Makefile was modified to allow a python executable to be specified via
+    the PYTHON variable.
+  - The Debian package is now uses python2.2 to build the executables.  This
+    is done in order to generate a package that works with both woody and
+    sarge/sid.  Debian users who wish to build the package with python2.3
+    instead of python2.2 should change the line that contains the string
+    "PYTHON=python2.2" in the debian/rules file.
+  - Version 1.4.6: Better Debian packaging, substitution feature.
+
+Wed 27 Aug 2003
+  - The "python" dependency in the "debian/control" file was changed to
+    "python2.2", and "python2.2" was also added as a build dependency.
+
+Tue 26 Aug 2003
+  - A few bugs caused or revealed by yesterday's changes were fixed.
+  - A seeming incompatibility between the pickling in Python 2.2.x and 2.3 was
+    worked around.
+  - The sub() moosicd method was finished and split into two variants: sub()
+    and sub_all().
+  - The "sub" and "suball" moosic commands were added.
+
+Mon 25 Aug 2003
+  - The file named "README.developers" was added.
+  - The Log class in moosicd_support was documented properly.
+  - The race condition problem in the previous() moosicd method was explored
+    and investigated more closely.
+  - The "howmany" parameter to the previous() moosicd method is now effective,
+    and the moosic command now takes advantage of it.
+  - The stop() moosicd method now uses a flag to tell the queue consumer to
+    act as if the song being stopped was not really finished (specifically,
+    the song is neither appended to the queue when loop mode is on nor is it
+    added to the history). This method was also made public since it now does
+    things that can't be done outside of the server.
+  - The change made to the stop() method allowed previous() to be rewritten in
+    a way that is both much simpler and free of race conditions.
+
+Thu 17 Jul 2003
+  - I've decided that moosh was a fun experiment, but isn't really worth
+    supporting officially.  While it can be slightly more convenient than
+    moosic in common cases, it will never be able to compete with the power
+    that a good shell (like bash or zsh) lends to moosic, unless a great deal
+    of effort was expended to duplicate advanced shell features.
+  - The sub() moosicd method was added, but is not yet finished.
+
+Mon 21 Jul 2003
+  - Version 1.4.5: The "previous" command.
+
+Sun 13 Jul 2003
+  - The following moosh commands were implemented: "setopt", "alias",
+    "showalias", "unalias".
+  - Docstrings were written for all moosh-specific commands.
+  - Tab completion in moosh was improved in various ways.
+  - The "ls" command in moosh was improved to handle glob expansion.
+  - The "shell" command was added to moosh.
+  - moosh.pod needs to be written.
+  - moosh is purposefully omitted from the Makefile since it is still
+    experimental.
+
+Sat 12 Jul 2003
+  - Tab completion for moosh was worked on.
+
+Fri 11 Jul 2003
+  - Various parts of moosh were polished up.
+  - moosic_dispatcher.process_filelist() now performs user-expansion on
+    pathnames that start with '~' (tilde).
+  - moosic_dispatcher.check_args() was added.
+
+Thu 10 Jul 2003
+  - I got bored and wrote most of moosh.py.
+
+Mon 07 Jul 2003
+  - moosic_dispatcher.wipe() was fixed to work properly when loop mode is on.
+
+Sun 06 Jul 2003
+  - The reason why "moosic curr" sometimes returns random junk was discovered.
+    It turns out to be a bug in binascii.a2b_base64() in Python 2.2.2.  No
+    other Python versions seem to exhibit this bug.
+  - The "True" and "False" constants are once again defined if they didn't
+    already exist.  This is meant to allow the program to run in Python 2.2,
+    which doesn't pre-define these.
+
+Tue 03 Jun 2003
+  - A bug in which moosicd_methods.putback() didn't update
+    data.last_queue_update was fixed.
+  - The "previous" moosicd method was tentatively added.
+  - The data.lock object in moosicd is now an instance of threading.RLock
+    instead of threading.Lock to allow re-entrant locking.
+  - The "previous" and "prev" moosic commands were added to mirror the moosicd
+    method of the same name.
+
+Mon 02 Jun 2003
+  - Version 1.4.4: Minor new features and cleanups.
+
+Sun 01 Jun 2003
+  - The "last_queue_update" moosicd method was added, and associated changes
+    to support this method were made throughout moosicd.
+  - The Moosic_API document has been converted to POD, and HTML, text, and
+    manpage versions are produced from this.
+  - The NEWS file is now included in the distribution.
+  - The debian/ directory was added for building Debian packages.
+
+Wed 28 May 2003
+  - The "install" target in the Makefile now puts the manpages in
+    $(INSTALL_PREFIX)/share/man/ instead of $(INSTALL_PREFIX)/man/, as
+    specified by the FHS 2.2.
+
+Sat 24 May 2003
+  - os.getenv is now used instead of os.environ to prevent exceptions from
+    occurring if an environment variable isn't defined.
+
+Wed 21 May 2003
+  - The "stagger-merge" moosic command was added.
+  - The "replace" moosicd method was added, and is used appropriately by the
+    commands in moosic_dispatcher.py.
+  - The "replace_range" moosicd method was added.
+
+Tue 20 May 2003
+  - Version 1.4.3: Code cleanup.
+
+Mon 19 May 2003
+  - The "unpause" moosicd method now refrains from sending its signal to the
+    song player if there isn't a song player currently running.  This fixes a
+    bad-looking but harmless TypeError fault that the client would get after
+    sending a "next" command.  This fault was generated because the "next"
+    moosicd method now calls "unpause" before finishing, and at that point
+    data.player_pid would be reset, while data.current_song would not.
+  - The moosic(1) manual page was polished up, and the documentation for the
+    "stagger-add" command was completed.
+
+Thu 15 May 2003
+  - The "next" moosicd method now unpauses the current song when killing it,
+    so that it will really terminate when we tell it to do so.  This fixes a
+    bug in which moosicd wouldn't die if the current song was paused.
+  - The logic for checking the number of arguments given to a moosic command
+    was redesigned.
+  - moosic now prints all of its error messages to stderr instead of stdout.
+
+Wed 14 May 2003
+  - Lots and lots of code was moved from moosic_main.py to
+    moosic_dispatcher.py.
+  - The Makefile no longer generates HTML documentation for non-public Python
+    modules.
+  - A (harmless) "broken pipe" exception is no longer raised by moosicd when a
+    client disconnects from the server before receiving all of the data
+    returned by the server.
+
+Tue 13 May 2003
+  - Version 1.4.2: Minor bug fixes.
+  - The moosic_dispatcher.py module was started in order to replace the Great
+    Big Giant if-else chain that handles the command string.
+
+Mon 12 May 2003
+  - The cut_list and crop_list moosicd methods were added.
+  - The utilities.parse_range() function now specially handles the case where
+    the input is "-1". The return value is now (-1, end_arg) instead of (-1, 0).
+    This makes "moosic list -- -1" work as expected.  (This misbehavior was
+    pointed out by Paramjit Oberoi.)
+  - The "length" and "len" moosic commands were added.
+
+Thu 08 May 2003
+  - A bug (pointed out by Paramjit Oberoi) in which current_song would not be
+    saved to disk was fixed.  This happened because queue_consumer() would reset
+    current_song before data.getstate() would be called.
+  - A bug which broke "moosicd --version" was fixed by including "VERSION" in
+    moosicd_support.__all__.
+
+Wed 07 May 2003
+  - A typo was fixed (errant comma at the end of a line) in main() in
+    moosicd_main.py on the line that sets "logfilename". (Reported by Ray Shaw.)
+  - The code that reads the config file is now placed before any code that uses
+    data.confdir. This ensures that data.confdir really exists before an attempt
+    is made to use it.
+  - The "log" attribute is now set in the DataStore constructor in
+    moosicd_support.py, fixing the AttributeError that was raised when
+    moosicd_main.py tried to set this attribute.
+  - Version 1.4.1-beta2: Critical bug fixes for the previous beta.
+  - The play() function in moosicd_main.py no longer appends the songname to the
+    command vector if matched-groups substition was already done.
+  - The player log is now written with line-buffered output.
+  - moosic.pod now mentions the loop-related commands.
+  - Version 1.4.1: State saving and match group substition.
+
+Tue 06 May 2003
+  - packed_list() was commented out, since I'm not sure if it's a good idea.
+  - A loop mode was implemented for moosicd.  The appropriate moosicd methods
+    and moosic commands were implemented, but they need further testing and
+    documentation.
+  - The __getitem__ and __getslice__ moosicd methods seem to work as expected.
+    I might just make them official.
+  - Version 1.4.1-beta1: Just for you, Ray.
+
+Mon 05 May 2003
+  - The indexed_list() moosicd method was fixed so that it returns a correct
+    value for "start" in the case when the "start" input parameter is negative
+    and its absolute value is greater than the length of the list.
+  - The packed_list() moosicd method was added.
+  - The implementation of saving/loading state at startup/shutdown has been
+    completed, but hasn't been tested yet.
+  - moosicd's option handling code and config file loading code was cleaned up
+    and restructured to work well with saved state loading and to avoid the
+    use of global variables.
+
+Sun 04 May 2003
+  - TcpMoosicServer and UnixMoosicServer now override handle_error so that the
+    error is logged with moosicd's global log object.
+  - split_range() was moved from moosicd_methods.py to moosicd_support.py.
+
+Sat 03 May 2003
+  - Match group substition was implemented in moosicd's song player.  For
+    example, if the config contains an entry with a regex of
+    "^file://(.*)\.(.*)$" and a command of "foo -t \2 \1", "\1" and "\2" in
+    the command will be replaced with whatever was matched by the first and
+    second parenthesized groups, respectively.
+  - $item substitution in moosicd's song player was improved to work on command
+    elements that contain "$item" as a substring, in addition to command
+    elements that are exactly "$item".
+
+Fri 02 May 2003
+  - The home-baked shuffle function in the utilities module has been abandoned
+    in favor of the much faster random.shuffle function in the standard library.
+  - The sort and reverse moosicd methods were slightly optimized for memory use.
+  - The "sort", "shuffle", and "reverse" commands now accept a range argument
+    which limits their operation to the items within the given range.
+  - The singleton restriction was removed from "data" in moosicd.  I decided it
+    was a ill-conceived design.
+  - The __setattr__ method that prevents creating new attributes for DataStore
+    objects is now only installed at the end of executing the constructor, in
+    order to make the constructor's code simpler and clearer.
+
+Thu 01 May 2003
+  - The "data" object in moosicd_support.py is now an instance of the DataStore
+    class instead of a class object.
+  - It is now impossible to set an attribute of the "data" object used in
+    moosicd unless the attribute was bound in data's class definition.
+  - The singleton pattern was implemented for the "data" object used in moosicd.
+
+Tue 29 Apr 2003
+  - Version 1.4: The XML-RPC revolution.
+
+Mon 28 Apr 2003
+  - The api_version() moosicd method was added.
+  - The Makefile was updated to generate HTML documentation from POD files and
+    from Python modules.
+  - Moosic_API.txt has been completed.
+  - A bad variable name in the get_history_limit() moosicd method was fixed.
+  - The history list now shrinks itself down to max_hist_size when
+    set_history_limit() is called if the length of the former is greater than
+    the latter.  Attempts to set the history limit below zero are now detected
+    and thwarted.
+
+Sun 27 Apr 2003
+  - Some bugs uncovered by testing were fixed.
+  - Explicit type checking was added to the "insert" moosicd method.  This
+    uses the introspection API that was standardized in PEP 252 and which was
+    implemented in Python 2.2.
+  - UnixStreamTransport was moved back outside of LocalMoosicProxy because it
+    might be useful to someone else who wants to shove XML-RPC calls over a
+    Unix socket.
+  - The wrap() and xmlrpc_server_doc() functions were added to the utilities
+    module.
+
+Thu 24 Apr 2003
+  - The return value of the history moosicd method was changed to a more
+    sophisticated structure that cleanly separates the item that was played
+    from the time it was played.
+  - The "get_history_limit" and "set_history_limit" moosicd methods were
+    added.
+  - Docstrings were written for the LocalMoosicProxy and InetMoosicProxy
+    factory functions in the utilities module, and the UnixStreamTransport
+    class was tucked away inside the LocalMoosicProxy function.
+  - LocalMoosicProxy and InetMoosicProxy were moved into a new module, named
+    "moosic_factory".
+
+Tue 22 Apr 2003
+  - Aliases for the queue_length moosicd method were created: "length" and
+    "__len__".
+
+Mon 21 Apr 2003
+  - The indexed_list() moosicd method now converts a negative index number
+    into its non-negative equivalent.  This feature was present in previously
+    released versions, but I seem to have forgotten it when I did the big
+    conversion to the 1.4 architecture.
+  - The code in the play() function in moosicd_main.py that replaces
+    occurrences of "$item" was fixed so that it doesn't append the songname to
+    the command vector if "$item" substituion was already done.
+  - A suggestion to use shell script wrappers to do fancy things was added to
+    the default config file.  This suggestion also notes that such shell
+    scripts should use exec to invoke the player program.
+
+Tue 15 Apr 2003
+  - The eas^H^H^Hpassover egg was obfuscated a teeny bit.
+  - The threads created by the request handler to handle individual requests
+    are now forced to have non-daemon status so that they can properly return
+    a response to the client even if the other threads have terminated.
+
+Mon 14 Apr 2003
+  - I just realized that the implementations for the grep and antigrep
+    functions in the utilities module are more complicated than necessary.
+    The match and antimatch classes, while cute, are completely not needed,
+    since the expression "match(pattern)" is practically equivalent to
+    "re.compile(pattern).search".  Since I was rewriting these functions
+    anyway, I replaced my calls to filter() with list comprehensions.  Those
+    list comprehensions are addictive little candies.
+  - The "history" moosicd method was modified to return an array of base64
+    instead of an array of strings.
+
+Fri 11 Apr 2003
+  - Various buglets associated with the switch from "string" to "base64" were
+    fixed.
+
+Thu 10 Apr 2003
+  - It turned out that all the Unicode nastiness could *not* be smoother over
+    through liberal use of encode().  The problem is that XML-RPC insists on
+    having all its strings in a specific, uniform text encoding (usually
+    UTF-8), which means that if I want to pass strings through XML-RPC, they
+    all must use a uniform codec.  But that's practically impossible if I want
+    to be able to pass around queue item names, since (1) they can potentially
+    use any character encoding scheme which I can't sanely predict, and (2)
+    they must not be arbitrarily translated from one codec to another without
+    losing their validity, unless their original codec is somehow remembered,
+    which would be a bookkeeping nightmare.  The solution is to use XML-RPC's
+    "base64" datatype instead of the "string" datatype for passing around
+    queue item objects.
+  - The preliminary work was done to ensure that the base64 datatype is used
+    to pass queue item data between the client and the server.  I expect to be
+    ironing out the ramifications of this change for a little while to come.
+    In particular, the API documentation will have to be updated to stress
+    this fact. Additionally, care will have to be taken to ensure that
+    appropriate conversion is done when calling any Moosic server methods that
+    accept or return queue items (using xmlrpclib.Binary() for the former, and
+    str() for the latter).
+
+Wed 02 Apr 2003
+  - The "del" command was added to moosic as an alias to "cut".
+  - The "status" command was added to moosic as an alias to "state".
+  - Various Python2-isms are quickly creeping into the code, such as list
+    comprehensions (lots of them!), augmented assignments, and calling methods
+    on instances of builtin types.  I'm surprised that I bothered to pay lip
+    service to Python 1.5.x for so long.
+
+Tue 01 Apr 2003
+  - I had rather painful fun debugging a slew of fatal UnicodeErrors.  It
+    turns out that all nastiness can be smoothed over by calling encode() on
+    all strings before printing or otherwise outputting them.
+
+Mon 31 Mar 2003
+  - The "shutting down" log notice in moosicd was moved from the die method to
+    the cleanup function, since the code in the die method isn't called if
+    moosicd is killed with a signal instead of with a Moosic request.
+
+Sun 30 Mar 2003
+  - moosicd now cleans up stale socket files that get left behind when moosicd
+    crashes.  This is a feature that I've wanted for a long time.
+  - The Log class was improved in minor ways: a dictionary of priority names
+    was added, the priority name is now mentioned in the log output, and
+    type-checking was improved.
+
+Fri 28 Mar 2003
+  - The flow control in moosicd was polished up so that it quits properly.
+  - moosic.pod was updated to note that the "pl-*" commands can be used to
+    read lists from standard input.
+  - Version 1.3.4: Tiny fixes.
+
+Tue 25 Mar 2003
+  - A mistake that prevented shuffling from being applied when the "pl-*"
+    moosic commands were used was corrected.
+  - All critical sections in moosicd now use the proper idiom for acquiring
+    and releasing the lock.
+  - The 1.3.x version of moosicd was made more robust by protecting the calls
+    to the do_command() method of MoosicHanlder inside a try block.  A finally
+    clause is also used to ensure that the lock object is released
+    appropriately.  This means that moosicd is no longer completely hosed when
+    an unexpected exception is raised while handling a request.
+
+Mon 24 Mar 2003
+  - The "move_list" moosicd method was added.
+  - The "move" moosicd method was rewritten in a simpler way.
+  - Most lock releasing is now performed within "finally" clauses to ensure
+    that the lock is released when the locked code raises an exception.  I
+    still need to ensure that this is done every time the lock is used.
+  - The "append", "prepend", and "insert" moosicd methods were rewritten to
+    use slice assignments and list comprehensions instead of the insert() or
+    append() list methods and for loops.
+  - The "pre" command was added to moosic as an alias for "prepend".
+
+Sun 23 Mar 2003
+  - The initial prototype of the moosic_proxy program was written.  It still
+    needs to be fleshed out with command-line switches and a real manpage.
+  - The interface for passing ranges to Moosic server methods was finalized,
+    and all the relevant methods were converted appropriately.
+  - The following moosicd methods now accept an optional "range" argument
+    which limits their operation to the specified range: shuffle, sort,
+    reverse, remove, filter.
+  - I'm not sure yet, but I think I might be finished with making backwards
+    incompatible changes to the moosicd API.  (At least until version 2.0 or
+    something equally earth-shaking.)
+
+Thu 20 Mar 2003
+  - I finally broke down and added a hack to work around the evil, evil bug in
+    ogg123.  For those of you just tuning in, when SIGTERM is sent to an
+    ogg123 process (i.e. whenever the "next" command is used), the process
+    will appear to be terminated (as far as calls to wait()/waitpid() can
+    determine), but the sound card will somehow remain busy for a fraction of
+    a second.  (Don't ask me why; it doesn't make any sense to me either, even
+    after reading ogg123's source code.)  As a result of this, moosicd will
+    try and fail to play the next song in the queue, since the player that
+    moosicd spawns generally will immediately exit with a "Device or resource
+    busy" error.  Depending on your system, the phase of the moon, and the
+    mood of the nearest cat in the area, moosicd will quickly and repeatedly
+    consume a large chunk of the song queue quite unsuccessfully.
+    Fortunately, ogg123 seems to behave properly when SIGINT is sent to it, so
+    I've devised a shameful and unreliable hack that detects when the current
+    song is being played by ogg123, and sends SIGINT instead of SIGTERM.
+  - Version 1.3.3: I hate you, ogg123.
+
+Sun 16 Mar 2003
+  - The makefile no longer includes MoosicClient.py when it squeezes moosic
+    into its executable form, since this module has been made practically
+    obsolete.
+
+Sun 09 Mar 2003
+  - The listlock member of the data class in moosicd was renamed to "lock"
+    because it really is used for locking any of the data in the data class,
+    not just the song list.
+
+Fri 07 Mar 2003
+  - Some moosicd methods were renamed to use under_scores rather than
+    StudlyCaps.  I can still do fun API-breaking things like this since the
+    moosicd API isn't officially finalized yet.
+  - A moosicd method for querying how long the current song has been playing
+    was partially written.  There are still some implementation issues to work
+    out.
+
+Thu 06 Mar 2003
+  - The request handler has been made asynchronous by using the
+    SocketServer.ThreadingMixIn class.  As a result of this, the lock
+    acquisition was made more fine grained by limiting it to non-read-only
+    requests.
+  - The qrunning flag in moosicd is no longer overloaded as a flag that is
+    used to signal moosicd to quit.  A separate quitFlag is now used instead.
+
+Wed 05 Mar 2003
+  - A misnamed variable in moosicd was fixed.  Specifically, "log" was used
+    instead of "data.log" in the last else clause in the do_command method in
+    the MoosicHandler class. This bug would cause moosicd to crash if it
+    received an unrecognized command from a client.
+  - A bug in moosicd which allowed an IOError to go uncaught if the client
+    closed its end of the socket too early was fixed.
+  - Version 1.3.2: Emergency bug fixes.
+
+Thu 27 Feb 2003
+  - A lot the code in moosicd_main.py was moved into its own file,
+    moosicd_support.py.
+
+Wed 26 Feb 2003
+  - Several variables in moosicd were renamed for increased clarity.
+  - moosicd was given a heavy and comprehensive massage in preparation for
+    phasing out the old home-brewed client-server RPC protocol in favor of
+    XML-RPC.
+  - The functions that implement the commands that moosicd can receive from a
+    client have been split out from moosicd into a separate module:
+    moosic_methods.py.
+  - The parse_range function has been moved from moosicd_main.py into the
+    utilities.py module.
+  - Python 2.2 or higher is now officially required, due to the use of the
+    xmlrpclib module.
+
+Mon 24 Feb 2003
+  - moosicd now has its implementation spread across multiple source files,
+    and thus must also be joined with squeezeTool.
+
+Sun 23 Feb 2003
+  - Several functions which are common to both moosic and moosicd were moved
+    into the utilities.py module.  The Makefile was updated accordingly.
+  - This marks the beginning of the 1.4 branch of Moosic.
+
+Thu 20 Feb 2003
+  - The --config-dir option is now properly mentioned in the output of "moosic
+    --help"
+  - A "clean" target was added to the Makefile.
+  - The server log file is now line-buffered to help prevent data loss in case
+    of a server crash.
+  - Version 1.3.1: New minor features, and small annoyances squashed.
+
+Wed 19 Feb 2003
+  - The --tcp option was added to moosic and used to test moosicd's new TCP/IP
+    capabilities.
+
+Tue 18 Feb 2003
+  - The --sort commandline option was added to moosic.
+
+Mon 17 Feb 2003
+  - In the response handler for the INSERT command to moosicd, the code now
+    returns if the expected space character is missing, instead of wrongly
+    attempting to execute the rest of the code in the INSERT handler.
+  - All exceptions thrown by the code in the MoosicClient module are now
+    derived from the MoosicError class.
+  - moosic now catches all the exceptions that might be thrown by the code in
+    the MoosicClient module.
+
+Sun 16 Feb 2003
+  - I changed my mind about moving the documentation files into their own
+    directory, so I moved them back.
+
+Fri 14 Feb 2003
+  - Options to the moosic program can now be specified either before the
+    command or after (or both).
+
+Wed 12 Feb 2003
+  - The call to wait() in the song player function was replaced with a call to
+    waitpid(). This was done in an attempt to ensure proper behavior for when
+    the player spawns a multi-threaded program (such as ogg123) to play a
+    song. The player function now returns only when the process that was
+    specifically spawned by the player exits, instead of returning whenever at
+    least one of the player's children finishes.  Unfortunately, this doesn't
+    really fix the reported problem of ogg123 leaving the sound card locked
+    after it has seemingly exited, but I've let this change remain since it
+    hurts nothing and makes the purpose of the code a little more clear and
+    explicit to those reading it.
+
+Wed 29 Jan 2003
+  - The documentation files (manpages and API document) were moved into their
+    own directory, and the Makefiles were updated accordingly.
+  - An option was added to moosicd which causes it to listen to a TCP/IP
+    socket for client requests instead of using the normal client-server
+    communication method. (Still untested.)
+  - An option was added to moosic to prevent replacing directories named on
+    the command line with their contents ("--no-recurse").
+  - The "--no-file-munge" option to moosic was renamed to "--non-file-args",
+    and is now meant to indicate that command-line arguments should not be
+    interpreted as filenames. (The old name is still around for backward
+    compatibility, but you didn't hear me say that.)
+
+Mon 27 Jan 2003
+  - A little work was done on Moosic_Client_API.txt, including the addition of
+    a notice of the document's state of incompleteness.
+  - The "broken pipe" error messages associated with the "list" command were
+    eliminated by catching and ignoring pipe-related IOErrors in the moosic
+    client.
+
+Wed 11 Dec 2002
+  - The MoosicClient class was was split out of the command-line client into
+    its own module.  The squeezeTool.py is now used to squoosh the two parts
+    into a single executable.
+
+Tue 10 Dec 2002
+  - Version 1.3: Little changes on the outside, big changes on the inside.
+
+Sun 8 Dec 2002
+  - A bug in the 'stagger' command was fixed. This bug was only triggered when
+    there was at least one item in the list that didn't match any of the
+    regular expressions named on the command line.
+
+Fri 1 Nov 2002
+  - The shell-quoting used when invoking the find command was improved to
+    properly handle pathnames containing single-quotes.
+
+Tue 13 Aug 2002
+  - The documentation for the 'history' command in moosic was updated.
+
+Sun 21 Jul 2002
+  - The gazillions of lines of conditional debugging messages were removed
+    from moosicd.  I really wasn't using them, and they were just creating a
+    huge clutter.  This means that the -d option is pretty useless.
+  - The 'unpause' command was added to moosic.
+  - The --config-dir option was added to moosic.
+  - Lots of debugging was done.  moosic amd moosicd are now actually usable
+    enough to start a serious testing phase.
+
+Tue 16 Jul 2002
+  - The "How to Write Your Own Moosic Client" document was started.
+  - The song player component of moosicd now captures the output of the
+    programs it spawns and places this output into the file named
+    "$HOME/.moosic/player_log-$HOSTNAME".
+  - moosicd now creates the ~/.moosic/ directory with its mode set to 0700,
+    reducing the possibility of malicious exploitation.
+
+Wed 10 Jul 2002
+  - WARNING: Interface change.  The regular expressions in the
+    ~/.moosic/config file are no longer implicitly case-insensitive.  Case
+    insensitive matching must now be explicitly requested in the config file,
+    presumably by adding the "(?i)" switch to the regexps (which has been done
+    in the default config file).
+  - The Log class was completed.
+  - The song player now outputs a relevant message when it has no handler for
+    a particular file.
+
+Tue 09 Jul 2002
+  - The "True" and "False" constants are now used for boolean values instead
+    of literal 1 and 0.
+  - Stubs for the various MoosicClient command methods were written, and
+    several of them were implemented.
+  - The 'partial-sort' command was added to moosic.  The documentation for
+    this command and for the 'stagger' command was completed.
+
+Tue 02 Jul 2002
+  - The 'stagger' command was added to moosic.  The documentation for this
+    command still needs to be added to the manpage and the internal help.
+
+Tue 04 Jun 2002
+  - The staggered_merge() function was added to moosic in anticipation of
+    adding a new shuffling method that takes advantage of it.  It's chock full
+    of functional programming goodness.
+  - More whitespace was added to shuffle() in an attempt to make it less
+    magical-looking.  I don't think it worked very well.  It's just a magical
+    function.
+
+Fri 31 May 2002
+  - The MoosicData class was created within moosicd in an effort to purge the
+    use of global variables.
+  - An overhaul of the logging system in moosicd was started.
+
+Tue 28 May 2002
+  - Several changes from versions 1.2.6 and 1.2.7 were merged into the 1.3
+    codebase.
+  - Both moosic and moosicd were adapted in various ways to accomodate the new
+    communication protocol.
+
+Mon 27 May 2002
+  - In the client, a MoosicClient class was created to provide a simple
+    programmatic interface for sending commands to moosicd. The communication
+    protocol between a client and the server was clearly defined. The
+    constructor and the internal _generic_request methods were completed.
+
+Tue 21 May 2002
+  - Version 1.2.7: Band-aid for the "broken pipe" bug.
+  - Exception handling in the client and the server was improved so that fewer
+    exceptions go uncaught.  This drastically reduces the nastiness that
+    results from the "broken pipe" error that can be produced when piping the
+    output of "moosic list" to another program.
+
+Tue 07 May 2002
+  - The output of "moosic --showcommands" was updated.
+  - Version 1.2.6: Documentation, finally!
+
+Mon 06 May 2002
+  - The manual pages for moosic and moosicd have been completed.
+
+Tue 23 Apr 2002
+  - A "toggle-pause" command was added.
+
+Tue 16 Apr 2002
+  - Proper manuals (in the POD format) for moosic and moosicd have been
+    started.
+
+Tue 09 Apr 2002
+  - The play() function now uses a different method for silencing the stdout
+    and stderr of the processes it spawns.  Instead of closing stdin, stdout,
+    and stderr, a file descriptor referencing /dev/null is dup2()ed onto these
+    streams.  This idea was suggested by David Bustos <bustos@caltech.edu>.
+  - In the process of doing the above, a bug that interfered with the
+    suppression of stdout and stderr was fixed.  This bug was fixed by working
+    with sys.__stdout__ instead of sys.stdout.
+  - When the play() function looks up the command to use for playing a file,
+    it now makes a copy of the command list named in the config, instead of
+    working with a reference to this list.  This allows me to safely perform
+    $item replacement on the command list before executing it.
+  - The part of the code contained in the listener_thread() function which
+    instantiated the MusicServer was moved outside this function, slightly
+    increasing code clarity and simplicity.
+
+Mon 18 Mar 2002
+  - Eek. I've let circumstances distract me from this project for quite a long
+    time. Version 1.2.5 was released for real this time.
+
+Tue 05 Feb 2002
+  - The "list" command is now able to take a range argument which limits the
+    listing to the given range.
+  - Everything has been nicely tested and debugged.  We're long overdue for a
+    new release.
+  - Version 1.2.5: Lots of new and interesting commands.
+
+Mon 04 Feb 2002
+  - The following commands were completed, but still may have bugs: "insert",
+    "pl-insert", "move", and "pause".
+  - A helper function was written for commands that accept ranges in their
+    argument list (such as "cut", "crop", and "move").
+  - The output of the "state" command was greatly changed. It is now more
+    informative and easier to understand.
+  - The documentation for the moosic client commands was reformatted.
+  - Command arguments to the moosic client are now case-insensitive.
+
+Wed 30 Jan 2002
+  - More code documentation tweaks.  The ambiguous and icky "state" variable
+    was renamed to "qrunning", and its role in the program was more clearly
+    defined and described.  This is only of interest to people who are reading
+    the moosicd code.
+
+Thu 24 Jan 2002
+  - The documentation for the "debug" command was removed, since it is no
+    longer useful for debugging anything. (The only things it was useful for
+    debugging have already been thoroughly debugged.)
+
+Wed 23 Jan 2002
+  - Work was started on a "pause" command, which suspends the process that is
+    playing the current song so that a song can be paused in the middle of
+    being played and later resumed at the same point.
+  - More documenting comments were added to the source code, and various other
+    user-invisible name changes were made for the sake of code clarity.
+
+Mon 07 Jan 2002
+  - The "help" command was removed. It didn't work properly unless the moosic
+    server was running, and the documentation for the command was incorrect,
+    and it was never anything more than a sugary alias for "--help" anyway.
+
+Sun 06 Jan 2002
+  - BEWARE! I've made an imcompatible change to the interface! The behavior of
+    the "stop" command is now identical to that of the "sleep" command. The
+    new "wipe" command now does what the "stop" command previously did (i.e.
+    clear the playlist and stop the current song).
+  - For some strange reason, the "die" command was not mentioned in the
+    command documentation.  This was fixed, and some aliases for "die" were
+    added.
+  - Playlist saving and loading was implemented. New commands: "pl-add",
+    "pl-append", "pl-prepend", "pl-mixlist", and "plainlist". OK, playlist
+    saving wasn't really implemented: you have to redirect the output of
+    "plainlist" to a file. Cry me a river.
+  - The "cleanup" handler function in moosicd now ignores various exceptions
+    that might occur as it runs.
+
+Thu 15 Nov 2001
+  - Ok, I think version 1.2 has been tested enough. It's time to release it.
+  - Version 1.2: The portable release.
+
+Wed 14 Nov 2001
+  - The "play" shell script (which usually comes with sox) is no longer used
+    to play files in the default configuration file, since it doesn't work
+    properly with the "next" command. Instead, sox is called directly.
+  - You can now use a special "$item" token in the command lines in the
+    filetype association (configuration) file. This token is replaced with the
+    playlist item to be played.
+  - Some kinks in moosicd were ironed out to make sure that it always exits in
+    a clean fashion under normal circumstances. The is especially important
+    now that it has a socket file that it has to clean up after itself.
+  - Some basic testing has been completed, and everything seems to actually
+    work now.
+
+Mon 12 Nov 2001
+  - The named Unix-domain sockets used to communicate between client and
+    server now exist within the filesystem, rather than taking advantage of
+    the Linux-only abstract namespace thingy.
+  - The "crop" and "cut" commands were added.
+  - moosicd now closes the stdin of external players, in addition to stdout
+    and stderr.
+  - The "list" command no longer includes the currently playing song as the
+    zeroth item. I decided that it was more redundant and confusing than
+    convenient.
+
+Wed 07 Nov 2001
+  - The "showconfig" command was added.
+
+Sun 04 Nov 2001
+  - A bug in which the moosic client would prepend items to the playlist in
+    reverse order has been fixed.  This bug was introduced by the change in
+    client/server protocol that was made on Mon 29 Oct 2001.
+
+Fri 02 Nov 2001
+  - The "reverse" command was added.
+
+Mon 29 Oct 2001
+  - The protocol between the client and the server was changed so that the
+    APPEND and PREPEND server commands only take a single item as their
+    argument, rather than a whole list of items. Similarly, when the server
+    sends data to the client in response to a LIST command, each item is sent
+    in a separate packet instead of sending the entire list of items in one
+    great big giant packet. This solves the problem which prevented the
+    client and server from sending a list of items to each other if the list
+    was too long.
+  - Some of the server code was rearranged for greater clarity. Specifically,
+    the definitions for the MusicHandler and MusicServer classes were moved
+    outside of the definition of the listener_thread() function.
+
+Sun 28 Oct 2001
+  - Version 1.1.2: More small fixes and improvements.
+  - This changelog now is ordered from newest to oldest instead of the other
+    way around.
+
+Fri 26 Oct 2001
+  - The "version" command was added to the client. This prints out the version
+    number of both the client and the currently running server.
+
+Thu 25 Oct 2001
+  - "fuser -ks /dev/dsp" is no longer used to stop playing the current song.
+    This method stopping the current song was evil in several ways. First, it
+    required fuser to be installed and in the user's path. Second, it would
+    blindly kill whatever process was using /dev/dsp whether or not moosic had
+    actually spawned that process. Third, it only produced any useful effect
+    if the program that was playing the current song actually used /dev/dsp,
+    which is not the case for programs such as playmidi.
+  - moosicd now prints out information regarding the configured filetype
+    associations if the debugging messages are turned on.
+
+Wed 24 Oct 2001
+  - The --help option to moosic was shortened considerably, and the
+    --showcommands option was added.
+  - The formatting of the documentation of the commands was adjusted for
+    readability (dots were added).
+
+Tue 16 Oct 2001
+  - The default configuration file was tweaked (the MIDI regexp was slightly
+    changed).
+  - The "reconfig" command should now actually work, as it never did before.
+    This still needs to be tested to be certain.
+
+Mon 15 Oct 2001
+  - Version 1.1.1: Random tweaks and fixes.
+
+Thu 11 Oct 2001
+  - The version number of moosic and moosicd is now listed as 1.1.1.  I'll
+    probably tar this up and call it a formal release later today.
+  - The problem where moosicd would crash if its log file didn't already exist
+    was fixed.
+
+Sun 30 Sep 2001
+  - The moosic client now accepts "shuffle" as equivalent to the "reshuffle"
+    command.
+
+Mon 17 Sep 2001
+  - moosicd now uses socket.gethostname() instead of the HOSTNAME environment
+    variable.
+
+Thu 13 Sep 2001
+  - INCOMPATIBLE CHANGE: The -c option to moosicd now specifies the server's
+    configuration directory instead of the configuration file.
+  - moosicd now defaults to writing all its output to a file
+    (~/.moosic/log-$HOSTNAME) instead of printing to the screen.
+
+Mon 03 Sep 2001
+  - The code in the server that handles commands now catches any socket
+    exceptions which are thrown.
+  - When the server gets the DIE command, it now only kills whatever process
+    has /dev/dsp open if the server is actually playing a song.
+
+Fri 10 Aug 2001
+  - The standard pre-release bugsearch has been declared complete.
+  - Version 1.1: Yummy new features.
+
+Tue 07 Aug 2001
+  - Support for the "filter" command was added to the client.  (Tee hee, small
+    detail to forget.)
+  - A deadlock that prevented the "die" command from working was fixed.  The
+    "die" command _really_ works now.  Really.  I'm not lying this time.
+  - The "reconfigure" command was added.
+  - The "--no-file-munge" option was added.
+
+Wed 01 Aug 2001
+  - The "die" command was disabled because it doesn't actually work.
+  - The "filter" command was added. This is a converse to the "remove" command
+    in that it removes everything that doesn't match the given regexp(s).
+  - The "die" command was fixed and re-enabled.
+
+Tue 31 Jul 2001
+  - The association of file types to player programs has been moved into a
+    separate configuration file.
+
+Fri 27 Jul 2001
+  - The server now numbers the list of items in the playlist, and includes the
+    current song as item zero.
+  - The "history" command was added.
+
+Thu 26 Jul 2001
+  - The "die" command was added.
+
+Wed 25 Jul 2001
+  - The program's history was moved out of the ChangeLog file and into the
+    HISTORY file.
+  - The dependency upon the external "date" command was removed.
+
+Tue 24 Jul 2001
+  - This changelog was created.
+  - Stuff was added to the TODO list.
+  - A history of the program was written.
+
+Mon 23 Jul 2001
+  - Version 1.0: Initial public release.

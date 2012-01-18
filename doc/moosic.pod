@@ -1,0 +1,821 @@
+=head1 NAME
+
+moosic - a command-line client for the Moosic jukebox system.
+
+=head1 SYNOPSIS
+
+B<moosic> [I<options>] I<command> [I<options>] [I<command arguments>]
+
+=head1 DESCRIPTION
+
+The B<moosic> program is the command-line interface to the Moosic jukebox
+system.  It communicates with L<moosicd>(1), the Moosic server, querying the
+server for information and telling the server what to do.  B<moosic> will not be
+able to do very much unless B<moosicd> is running.  When B<moosicd> isn't already
+running, B<moosic> will automatically start it for you, unless you specifically
+request otherwise (with the --no-startserver option).
+
+=head1 USAGE
+
+B<moosic> works by sending a command to the Moosic server and returning the
+response, if any.  The first non-option argument given to B<moosic> is the name
+of the command to be performed.  This command name is case-insensitive, and all
+non-alphanumeric characters in it are ignored.  You can use the "help" command
+to quickly and easily view the names of all the available commands and to get a
+brief description of individual commands.  You can also use C<moosic
+--showcommands> to display the short descriptions of all the commands at once.
+The L</COMMANDS> section below lists the full details of each command.  There
+are very many commands, so you should start by just learning a few commonly used
+commands, and only learning others as you feel the need.  I recommend starting
+with the following short command vocabulary: add, list, stop, play, and shuffle.  
+
+For example, C<moosic add foo.mp3> adds the file F<foo.mp3> (in the current
+directory) to the end of the song queue and returns you immediately back to your
+shell prompt without printing any output (unless an error occurs).  Compare with
+C<moosic list>, which will list the contents of the song queue.  Note that if
+the song queue is empty, C<moosic list> will not display anything.
+
+=head1 OPTIONS
+
+Most of the options for B<moosic> are only relevant if they are used with one of
+the commands that take a I<filelist> argument.  See L</COMMANDS> for the
+definition of a I<filelist>.  The only shuffling options that don't mutually
+exclude each other are B<-d> and B<-a>.  Shuffling options that are named later
+on the command line take precedence over ones that occur earlier.  All options
+must be named immediately before the I<command> given to B<moosic> or
+immediately after the I<command>; options placed within the list of the
+command's arguments will not be interpreted as options.
+
+=over
+
+=item B<-g>, B<--shuffle-global>
+
+This option causes B<moosic> to shuffle the entire I<filelist> after directory
+expansion has taken place, before sending the I<filelist> to the Moosic server.
+This is the default behavior.  This option is only meaningful if used in
+conjunction with a command that accepts a I<filelist>.
+
+=item B<-d>, B<--shuffle-dir>
+
+This option causes B<moosic> to shuffle the results of expanding the
+directories named in the I<filelist>.  This option is only meaningful if used in
+conjunction with a command that accepts a I<filelist>.
+
+=item B<-a>, B<--shuffle-args>
+
+This option causes B<moosic> to shuffle the actual command line arguments that
+comprise the I<filelist>.  This option is only meaningful if used in conjunction
+with a command that accepts a I<filelist>.
+
+=item B<-o>, B<--inorder>
+
+When this option is used, B<moosic> doesn't shuffle the I<filelist> named on the
+command line at all.  Rather, the order specified on the command line is
+preserved.  This option is only meaningful if used in conjunction with a command
+that accepts a I<filelist>.
+
+=item B<-s>, B<--sort>
+
+When this option is used, B<moosic> sorts the I<filelist> lexicographically
+after it has been expanded (through directory recursion or auto-finding or the
+like).  The order specified on the command line is ignored.  This option is only
+meaningful if used in conjunction with a command that accepts a I<filelist>.
+
+=item B<-r>, B<--no-recurse>
+
+Using this option prevents B<moosic> from replacing directories named in the
+I<filelist> with a recursive traversal of their contents.
+
+=item B<-n>, B<--no-file-munge>
+
+Using this option prevents B<moosic> from modifying the names in the expanded
+I<filelist>.  Normally, B<moosic> converts relative filenames into absolute
+filenames before sending the names to B<moosicd>, but this is generally not
+desirable behavior if you want to insert items that aren't local files into the
+queue (such as URLs).  This option is only meaningful if used in conjunction with
+a command that accepts a I<filelist>.
+
+=item B<-i>, B<--ignore-case>
+
+Treats any given regular expressions as if they were case-insensitive.  This
+option is only meaningful if used in conjunction with a command that accepts one
+or more regular expressions as arguments.  This option is syntactic sugar, since
+the regular expressions supported by Moosic can also be made case-insensitive by
+including "(?i)" within the regular expression.
+
+=item B<-f>, B<--auto-find>
+
+This option causes each string in the I<filelist> with the results of performing
+a "fuzzy" search for music files.  "Fuzzy" matching is done by simplifying all
+the candidate filenames (by lowering the case and removing all non-alphanumeric
+characters except slashes) and then testing to see if the search string (which
+has been similarly simplified) is contained in any of the filenames.  The list
+of candidate filenames is obtained by recursively traversing the file hierarchy
+rooted at the directory specified by the B<--music-dir> option (which has a
+default value of F<~/music/>).
+
+For example, if you use C<moosic -f add severedgoddess>, and the file
+F<~/music/Meat_Puppets/Severed_Goddess_Hand.mp3> exists, then this file will be
+included in the list of files to be added to the queue.  Similarly, if you use
+C<moosic -f pre nesad>, and the directory F<~/music/J/Jane's Addiction/> exists,
+then all the files in this directory (and its subdirectories) will be included
+in the list of files to be prepended to the queue.
+
+This option is only meaningful if used in conjunction with a command that
+accepts a I<filelist>.  Beware that using this option can cause B<moosic> to
+take a long time to complete if the directory tree being searched contains a
+very large number of files.
+
+=item B<-F>, B<--auto-grep>
+
+This option enables behavior very much like that of the B<--auto-find> option,
+except that regular expression searching is used instead of the "fuzzy" search
+scheme.  Specifically, each string in the I<filelist> is treated as a regular
+expression, and is replaced with all the filenames that match the expression.
+As with B<--auto-find>, the filenames that are eligible for matching are
+obtained by traversing the directory named with the B<--music-dir> option
+(defaulting to F<~/music/> if B<--music-dir> is not used).  Essentially,
+C<moosic -F prepend something> is semantically equivalent to
+C<moosic prepend `find ~/music/ | grep something`>, but is syntactically a lot
+sweeter.
+
+This option is only meaningful if used in conjunction with a command that
+accepts a I<filelist>.  Beware that using this option can cause B<moosic> to
+take a long time to complete if the directory tree being searched contains a
+very large number of files.
+
+=item B<-m> I<directory>, B<--music-dir> I<directory>
+
+This option controls which directory is used for searching when the "auto-find"
+or "auto-grep" feature is enabled.  These automatic searches are limited to the
+file hierarchy rooted at the directory specified by this option.  When this
+option is not used, the F<~/music/> directory is used as a default.  This option
+is only meaningful if either B<--auto-find> or B<--auto-grep> is used.
+
+=item B<-S>, B<--showcommands>
+
+Prints a list of the commands that may be used with B<moosic> and then exits.
+Note that this output is quite copious, so you will probably want to pipe it to
+a text pager, such as B<less>.
+
+=item B<-h>, B<--help>
+
+Prints a short help message that explains the command line options and then
+exits.
+
+=item B<-v>, B<--version>
+
+Prints version information and then exits.
+
+=item B<-c> I<directory>, B<--config-dir> I<directory>
+
+This option is not needed under normal circumstances.  It should only be used
+if you want B<moosic> to communicate with an instance of B<moosicd> which was
+invoked with the B<-c>/B<--config> option.  Using this option tells B<moosic>
+to search the specified directory for the files which are usually found in
+I<~/.moosic/>.
+
+=item B<-t> I<host>:I<port>, B<--tcp> I<host>:I<port>
+
+This option tells B<moosic> to communicate with a Moosic server that is
+listening to the specified TCP/IP port on the specified host.  Running a Moosic
+server that accepts requests via TCP/IP is not recommended because it is a
+security risk.
+
+=item B<-N>, B<--no-startserver>
+
+This option prevents B<moosic> from trying to automatically start B<moosicd> if
+it can't contact a Moosic server.
+
+=item B<-U>, B<--allow-unplayable>
+
+This option allows songs that the server doesn't know how to play to be added
+into the song queue.
+
+=item B<-C>, B<--current-in-list>
+
+This option causes the currently playing song to be printed at the top of the
+output of the "list" and "plainlist" commands.  It has no effect if an argument
+is given to these commands or if used with other commands.
+
+=back
+
+=head1 COMMANDS
+
+Any of these commands may be specified with any mixture of upper-case and
+lower-case letters, and non-alphabetic characters (such as '-') may be omitted.
+
+Many of these commands accept a I<range> argument.  A I<range> is a pair of
+colon-separated numbers.  Such a I<range> addresses all items whose index in the
+song queue is both greater than or equal to the first number and less than the
+second number.  For example, "3:7" addresses items 3, 4, 5, and 6.  If the first
+number in the pair is omitted, then the I<range> starts at the beginning of the
+song queue.  If the second number in the pair is omitted, then the I<range>
+extends to include the last item in the song queue.  A I<range> can also be a
+single number (with no colon), in which case it addresses the single item whose
+index is that of the given number.  Negative numbers may be used to index items
+from the end of the list instead of the beginning.  Thus, -1 refers to the last
+item in the song queue, -2 refers to the second-to-last item, etc.
+
+Beware that a negative number that immediately follows a moosic I<command> is
+liable to be incorrectly interpreted as an option, so option processing should
+be explicitly terminated with an argument of "--" between the I<command> and the
+number.  This is illustrated by the following example, which removes the last
+item in the queue: C<moosic del -- -1>
+
+Alternatively (and perhaps more conveniently), you can prevent negative numbers
+from being interpreted as options by preceding the range with a single character
+that can't be mistaken for a number or an option (i.e. any character that isn't
+a digit or a dash).  Example: C<moosic list /-15:-9>.  You can also place such a
+character at the end of the range if you think it makes it look prettier.
+Example: C<moosic list /-15:-9/>.  The bracketing characters surrounding a range
+need not be the same: C<moosic shuffle '[-13:8]'>.  Notice how the preceding
+example surrounded the range in quotes to prevent the shell from treating the
+"[" and "]" characters specially (since shells have a habit of doing things like
+that).
+
+=head2 Querying for information
+
+These commands print useful bits of information to standard output.
+
+=over
+
+=item B<help> [I<command> ...]
+
+Prints a brief description of the moosic commands named as arguments.  If no
+arguments are given, a list of all the available moosic commands is printed.
+
+=item B<current>
+
+Print the name of the song that is currently playing.
+
+=item B<curr>
+
+An alias for "current".
+
+=item B<current-time> [I<format>]
+
+Print the amount of time that the current song has been playing.  By default,
+this time is printed in a format of "hours:minutes:seconds", but if a different
+format is desired, a string argument can be given to specify it.  The format
+should be a string that is appropriate for passing to the strftime(3) function.
+
+=item B<list> [I<range>]
+
+Print the list of items in the current song queue.  A whole number is printed
+before each item in the list, indicating its position in the queue.  If a range
+is specified, only the items that fall within that range are listed.  Remember
+that the song queue does not contain the currently playing song.
+
+=item B<plainlist> [I<range>]
+
+Print the current song queue without numbering each line.  If a range is
+specified, only the items that fall within that range are listed.  This output
+is suitable for saving to a file which can be reloaded by the "pl-append",
+"pl-prepend", "pl-insert", and "pl-mixin" commands.
+
+=item B<history> [I<number>]
+
+Print a list of items that were recently played.  The times mentioned in the
+output of this command represents the time that a song finished playing.  If a
+number is specified, then no more than that number of entries will be printed.
+If a number is not specified, then the entire history is printed.  Note that
+B<moosicd> limits the number of items stored in its history list.
+
+=item B<hist> [I<number>]
+
+An alias for "history".
+
+=item B<state>
+
+Print the current state of the music daemon.
+
+=item B<status>
+
+An alias for "state".
+
+=item B<length>
+
+Print the number of items in the queue.
+
+=item B<len>
+
+An alias for "length".
+
+=item B<ispaused>
+
+Show whether the current song is paused or not. If the song is paused, "True" is
+printed and B<moosic> returns normally. If the song is not paused, "False" is
+printed and B<moosic> returns with a non-zero exit status (which happens to be 2
+for no particular reason).
+
+=item B<islooping>
+
+Show whether the server is in loop mode. If the server is in loop mode, "True"
+is printed and B<moosic> returns normally. If not, "False" is printed and
+B<moosic> returns with a non-zero exit status (which happens to be 2 for no
+particular reason).
+
+=item B<isadvancing>
+
+Show whether the server is advancing through the song queue. If the server is
+advancing, "True" is printed and B<moosic> returns normally. If not, "False" is
+printed and B<moosic> returns with a non-zero exit status (which happens to be 2
+for no particular reason).
+
+=item B<version>
+
+Print version information for both the client and the server, and then exit.
+
+=back
+
+=head2 Adding to the song queue
+
+These commands will add to the queue of items to be played.  Many of these
+commands accept a I<filelist> argument.  A I<filelist> is a list of one or more
+files or directories.  Any directories named in the list will be replaced by a
+list of files produced by recursively traversing the contents of the directory
+(unless the B<--no-file-munge> option or B<--no-recurse> option is being used).
+Depending on the shuffling options specified when invoking B<moosic>, the list
+will be shuffled before being added to the Moosic server's queue.
+
+=over
+
+=item B<append> I<filelist>
+
+Add the files to be played to the end of the song queue.
+
+=item B<add> I<filelist>
+
+An alias for "append".
+
+=item B<pl-append> I<playlist-file> ...
+
+Add the items listed in the given playlist files to the end of the song queue.
+If "-" (a single dash) is given as the name of a playlist file, data will be
+read from from standard input instead of trying to read from a file named "-".
+
+=item B<pl-add> I<playlist-file> ...
+
+An alias for "pl-append".
+
+=item B<prepend> I<filelist>
+
+Add the files to be played to the beginning of the song queue.
+
+=item B<pre> I<filelist>
+
+An alias for "prepend".
+
+=item B<pl-prepend> I<playlist-file> ...
+
+Add the items listed in the given playlist files to the beginning of the song
+queue.  If "-" (a single dash) is given as the name of a playlist file, data
+will be read from from standard input instead of trying to read from a file
+named "-".
+
+=item B<mixin> I<filelist>
+
+Add the files to the song queue and reshuffle the entire song queue.
+
+=item B<pl-mixin> I<playlist-file> ...
+
+Add the items listed in the given playlist files to the song queue and reshuffle
+the entire song queue.  If "-" (a single dash) is given as the name of a
+playlist file, data will be read from from standard input instead of trying to
+read from a file named "-".
+
+=item B<replace> I<filelist>
+
+Replace the current contents of the song queue with the songs contained in the
+filelist.
+
+=item B<pl-replace> I<playlist-file> ...
+
+Replace the current contents of the song queue with the songs named in the given
+playlists.
+
+=item B<insert> I<filelist> I<index>
+
+Insert the given items at a given point in the song queue.  The items are
+inserted such that they will precede the item that previously occupied the
+specified index.
+
+=item B<pl-insert> I<playlist-file> ... I<index>
+
+Insert the items specified in the given playlist files at a specified point in
+the song queue.  If "-" (a single dash) is given as the name of a playlist file,
+data will be read from from standard input instead of trying to read from a file
+named "-".
+
+=item B<putback>
+
+Reinsert the current song at the start of the song queue.
+
+=item B<stagger-add> I<filelist>
+
+Adds the file list to the end of the song queue, but only after rearranging it
+into a "staggered" order.  This staggered order is very similar the order created
+by the B<stagger> command (described below).  Each element of the file list
+(before replacing directories with their contents) specifies a category into
+which the expanded file list will be divided.  The staggered order of the list
+being added is formed by taking the first item from each category in turn until
+all the categories are empty.  This may be a bit difficult to understand without
+an example, so here is a typical case:
+
+Initially, the queue contains a few items.
+
+    [0] /music/a.ogg
+    [1] /music/b.mp3
+    [2] /music/c.mid
+
+Additionally, there are two directories that each contain a few files:
+
+    $ ls /music/X/ /music/Y/
+    X:
+    1.ogg  2.ogg  3.ogg
+
+    Y:
+    1.ogg  2.ogg  3.ogg  4.ogg
+
+After executing C<moosic -o stagger-add /music/Y /music/X>, the queue now
+contains:
+
+    [0] /music/a.ogg
+    [1] /music/b.mp3
+    [2] /music/c.mid
+    [3] /music/Y/1.ogg
+    [4] /music/X/1.ogg
+    [5] /music/Y/2.ogg
+    [6] /music/X/2.ogg
+    [7] /music/Y/3.ogg
+    [8] /music/X/3.ogg
+    [9] /music/Y/4.ogg
+
+=item B<stagger-merge> I<filelist>
+
+Adds the given file list to the queue in an interleaved fashion.  More
+specifically, the new song queue will consist of a list that alternates between
+the items from the given file list and the items from the existing song queu.
+For example, if the queue initially contains:
+
+    [0] /music/a.ogg
+    [1] /music/b.mp3
+    [2] /music/c.mid
+
+And the F</music/Y/> directory contains:
+
+    1.ogg  2.ogg  3.ogg  4.ogg
+
+Then, after executing C<moosic -o stagger-merge /music/Y>, the queue will
+contain:
+
+    [0] /music/Y/1.ogg
+    [1] /music/a.ogg
+    [2] /music/Y/2.ogg
+    [3] /music/b.mp3
+    [4] /music/Y/3.ogg
+    [5] /music/c.mid
+    [6] /music/Y/4.ogg
+
+=item B<interval-add> I<interval> I<filelist>
+
+Inserts the given songs into the current song queue with a regular frequency
+that is specified with the given I<interval> argument (which must be an
+integer).  
+
+For example, if the queue initially contains:
+
+    [0] /music/a.mod
+    [1] /music/b.mod
+    [2] /music/c.mod
+    [3] /music/d.mod
+    [4] /music/e.mod
+    [5] /music/f.mod
+    [6] /music/g.mod
+
+And the F</music/Z> directory contains:
+
+    aleph.wav  bet.wav  gimmel.wav
+
+Then, after executing C<moosic -o interval-add 3 /music/Z>, the queue will
+contain:
+
+    [0] aleph.wav
+    [1] /music/a.mod
+    [2] /music/b.mod
+    [3] bet.wav
+    [4] /music/c.mod
+    [5] /music/d.mod
+    [6] gimmel.wav
+    [7] /music/e.mod
+    [8] /music/f.mod
+    [9] /music/g.mod
+
+=back
+
+=head2 Removing from the song queue
+
+These commands will remove from the queue of items to be played.
+
+=over
+
+=item B<cut> I<range>
+
+Removes all song queue items that fall within the given range.
+
+=item B<del> I<range>
+
+An alias for "cut".
+
+=item B<crop> I<range>
+
+Removes all song queue items that do not fall within the given range.
+
+=item B<remove> I<regex> ...
+
+Remove all song queue items that match the given regular expression.  If multiple
+regular expressions are given, any song that matches any one of the expressions
+will be removed.
+
+=item B<filter> I<regex> ...
+
+Remove all song queue items that do not match the given regular expression.  If
+multiple regular expressions are given, only those songs that match all the
+regular expressions will remain afterward.
+
+=item B<clear>
+
+Clear the song queue.
+
+=item B<wipe>
+
+Clear the song queue and stop the current song.
+
+=back
+
+=head2 Rearranging the song queue
+
+These commands let you change the order of the items in the queue.
+
+=over
+
+=item B<move> I<range> I<index>
+
+Moves all items in the given range to a new position in the song queue.
+If you want to move items to the end of the queue, use C<`moosic length`> as the
+final argument.  For example, to move the first 10 songs to the end of the
+queue, use the following command: C<moosic move 0:10 `moosic length`>
+
+=item B<move-pattern> I<regex> I<index>
+
+Moves all items that match the given regular expression to a new position in
+the song queue.
+
+=item B<swap> I<range> I<range>
+
+Causes the songs contained within the two specified ranges to trade places.
+
+=item B<reshuffle> [I<range>]
+
+Reshuffle the song queue.  If a range is specified, only items that fall within
+that range will be shuffled.
+
+=item B<shuffle> [I<range>]
+
+An alias for "reshuffle".
+
+=item B<sort> [I<range>]
+
+Rearrange the song queue in sorted order.  If a range is specified, only items
+that fall within that range will be sorted.
+
+=item B<reverse> [I<range>]
+
+Reverse the order of the song queue.  If a range is specified, only items that
+fall within that range will be reversed.
+
+=item B<partial-sort> I<regex> ...
+
+For each specified regular expression, the items in the song queue that match
+that expression are removed from the queue and gathered into their own list.
+All of these lists (plus the list of items that did not match any regular
+expression) are then stitched back together through simple concatenation.
+Finally, this unified list replaces the contents of the song queue.
+
+The items that match a particular regular expression will remain in the same
+order with respect to each other.  Each group of matched items will appear in
+the reordered song queue in the order that the corresponding regular
+expressions were specified on the command line.
+
+=item B<stagger> I<regex> ...
+
+For each specified regular expression, the items in the song queue that match
+that expression are removed from the queue and gathered into their own list.
+All of these lists are then merged together in a staggered fashion. All the
+leftover items (i.e. the ones that weren't matched by any regex on the command
+line) are appended to this unified list, which then replaces the contents of the
+song queue.
+
+For example, if you use C<moosic stagger red blue green> and the queue
+originally contains only names that either contain the string "red" or "blue" or
+"green", then the members of the reordered queue will alternate between "red"
+items, "blue" items, and "green" items.  If the queue does contain items that
+are neither "red" nor "green" nor "blue", then these will be collected and
+placed at the end of the queue, after all the "red", "green", and "blue" items.
+
+=item B<sub> I<pattern> I<replacement> [I<range>]
+
+Perform a regular expression substitution on all items in the song queue.  More
+precisely, this searches each queue item for the regular expression specified by
+the first argument, and replaces it with the text specified by the second
+argument.  Any backslash escapes in the replacement text will be processed,
+including special character translation (e.g. "\n" to newline) and
+backreferences to groups within the match.  If a range is given, then the
+substitution will only be applied to the items that fall within the range,
+instead of all items.  Only the first matching occurrence of the pattern is
+replaced in each item.
+
+=item B<suball> I<pattern> I<replacement> [I<range>]
+
+This is identical to the "sub" command, except that all occurrences of the
+pattern within each queue item are replaced instead of just the first
+occurrence.
+
+=back
+
+=head2 General management
+
+These commands affect the state of the Moosic server in various ways.
+
+=over
+
+=item B<next> [I<number>]
+
+Stops the current song (if any), and jumps ahead to a song that is currently in
+the queue.  The argument specifies the number of songs to be skipped, including
+the currently playing song.  Its default value is 1.  The skipped songs are
+recorded in the history as if they had been played.  If queue advancement is
+disabled, this command merely stops the current song and removes the appropriate
+number of songs from the queue, and does not cause a new song to be played.
+
+=item B<previous> [I<number>]
+
+Retreats to a previously played song (from the history list) and begins playing
+it if queue advancement is enabled.  If a number is given as an argument, then
+the music daemon will retreat by that number of songs.  If no argument is given,
+then the music daemon will retreat to the most recent song in the history.  More
+precisely, this command stops the current song (without recording it in the song
+history) and returns the most recently played song or songs to the queue.  This
+command removes songs from the history when it returns them to the queue, thus
+modifying the song history.
+
+When loop mode is on, this command retreats into the tail end of the queue
+instead of the song history.  This produces wrap-around behavior that you would
+expect from loop mode, and does not modify the song history.
+
+=item B<prev>
+
+An alias for "previous".
+
+=item B<goto> I<regex>
+
+Jumps to the next song in the queue that matches the given regular expression.
+
+=item B<gobackto> I<regex>
+
+Jumps back to the most recent previous song that matches the given regular
+expression.
+
+=item B<noadvance>
+
+Tell the music daemon to stop playing any new songs, but without interrupting
+the current song.  In other words, this halts queue advancement.
+
+=item B<noadv>
+
+An alias for "noadvance".
+
+=item B<advance>
+
+Tell the music daemon to resume queue advancement (i.e. play new songs when the
+current one is finished).  Obviously, this has no effect if queue advancement
+hasn't been disabled.
+
+=item B<adv>
+
+An alias for "advance".
+
+=item B<toggle-advance>
+
+Halts queue advancement if it is enabled, and enables advancement if it is
+halted.
+
+=item B<stop>
+
+Tell the music daemon to stop playing the current song and stop processing the
+song queue.  The current song is put back into the song queue and is not
+recorded in the song history.
+
+=item B<pause>
+
+Suspend the current song so that it can be resumed at the exact same point at a
+later time.  Note: this often leaves the sound device locked.
+
+=item B<unpause>
+
+Unpause the current song, if the current song is paused, otherwise do nothing.
+
+=item B<play>
+
+Tell the music daemon to resume playing.  (Use after "stop", "noadv", or
+"pause".)
+
+=item B<loop>
+
+Turn loop mode on.  When loop mode is on, songs are returned to the end of the
+queue when they finish playing instead of being thrown away.
+
+=item B<noloop>
+
+Turn loop mode off.
+
+=item B<toggle-loop>
+
+Turn loop mode on if it is off, and turn it off if it is on.
+
+=item B<reconfigure>
+
+Tell the music daemon to reload its configuration file.
+
+=item B<reconfig>
+
+An alias for "reconfigure".
+
+=item B<showconfig>
+
+Query and print the music daemon's filetype associations.
+
+=item B<start-server> [I<options>]
+
+Start a new instance of the music daemon (also known as B<moosicd>).  If option
+arguments are given, they will be used as the options for invoking B<moosicd>.
+The options that are accepted by B<moosicd> can be found in its own manual page,
+L<moosicd>(1).
+
+=item B<exit>
+
+Tell the music daemon to quit.
+
+=item B<quit>
+
+An alias for "exit".
+
+=item B<die>
+
+An alias for "exit".
+
+=back
+
+=head1 AUDIO CD SUPPORT
+
+If you have the takcd program installed, and you have an appropriate entry for
+it in the Moosic server's player configuration, then you can play audio CD
+tracks with Moosic.  The following entry should be in F<~/.moosic/config>:
+
+    (?i)^cda://(\S*)
+    takcd \1
+
+To put CD tracks into the song queue, you should name them with the prefix
+"cda://", followed immediately by the number of the track you wish to play.  For
+example, C<moosic -n add cda://3> will add the third track on the CD to the end
+of the song queue.
+
+The takcd program can be found at L<http://bard.sytes.net/takcd/>.
+
+=head1 FILES
+
+=over
+
+=item F<socket>
+
+This is a socket file which is used to allow Moosic clients to contact the
+Moosic server.  It is generally located in the I<~/.moosic/> directory, unless
+B<moosicd> was invoked with the B<-c>/B<--config> option.
+
+=back
+
+=head1 SEE ALSO
+
+L<moosicd>(1), for details on invoking the Moosic server by hand.
+
+Various B<moosic> commands accept regular expressions arguments.  The syntax
+used for these regular expressions is identical to the syntax used by Python's
+regular expression library.  The details of this syntax are explained in the
+chapter entitled "Regular Expression Syntax"
+L<http://www.python.org/doc/current/lib/re-syntax.html> from the section dealing
+with the B<re> module in the I<Python Library Reference>.
+
+=head1 AUTHOR
+
+Daniel Pearson <daniel@nanoo.org>
